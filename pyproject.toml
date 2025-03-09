@@ -30,6 +30,7 @@ dev = [
     "mypy>=1.15.0",
     "open-deep-researcher",
     "ruff>=0.9.10",
+    "wikipedia>=1.4.0",
 ]
 
 [build-system]
