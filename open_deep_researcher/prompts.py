@@ -40,7 +40,7 @@ Reference sources inline according to the citation rules.
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
 - Each citation should directly correspond to a source URL.
-- For local documents, use the `file://` URL format provided in the source. (if applicable)
+- For **local documents (not website link URLs)**, **do not** embed the citation as a link. Instead, include only the reference text.
 - Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
 - Ensure all citations are naturally integrated into the sentence.
 </Citation Rules>
@@ -163,7 +163,7 @@ section_writer_instructions = """Write one section of a research report.
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
 - Each citation should directly correspond to a source URL.
-- For local documents, use the `file://` URL format provided in the source. (if applicable)
+- For **local documents (not website link URLs)**, **do not** embed the citation as a link. Instead, include only the reference text.
 - Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
 - Ensure all citations are naturally integrated into the sentence.
 </Citation Rules>
@@ -364,7 +364,7 @@ In both cases:
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
 - Each citation should directly correspond to a source URL.
-- For local documents, use the `file://` URL format provided in the source. (if applicable)
+- For **local documents (not website link URLs)**, **do not** embed the citation as a link. Instead, include only the reference text.
 - Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
 - Ensure all citations are naturally integrated into the sentence.
 </Citation Rules>
