@@ -23,7 +23,6 @@ from open_deep_researcher.prompts import (
     section_writer_inputs,
     section_writer_instructions,
 )
-from open_deep_researcher.retriever.web import select_and_execute_search
 from open_deep_researcher.state import (
     Feedback,
     Queries,
@@ -41,8 +40,8 @@ from open_deep_researcher.utils import (
     format_sections,
     generate_detail_heading,
     get_config_value,
-    get_search_params,
     normalize_heading_level,
+    select_and_execute_search,
 )
 
 ## Nodes --
@@ -102,7 +101,6 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
     number_of_queries = configurable.number_of_queries
     search_api = get_config_value(configurable.search_api)
     search_api_config = configurable.search_api_config or {}
-    params_to_pass = get_search_params(search_api, search_api_config)
 
     # Set writer model (model used for query writing)
     writer_provider = get_config_value(configurable.writer_provider)
@@ -128,7 +126,7 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
 
     # Web search
     query_list = [query.search_query for query in results.queries]
-    source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
+    source_str = await select_and_execute_search(search_api, query_list, search_api_config)
 
     # Extract URLs from search results for references
     urls = extract_urls_from_search_results(source_str)
@@ -192,7 +190,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     number_of_queries = configurable.number_of_queries
     search_api = get_config_value(configurable.search_api)
     search_api_config = configurable.search_api_config or {}  # Get the config dict, default to empty
-    params_to_pass = get_search_params(search_api, search_api_config)  # Filter parameters
 
     # Convert JSON object to string if necessary
     if isinstance(report_structure, dict):
@@ -225,7 +222,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     query_list = [query.search_query for query in results.queries]
 
     # Search the web with parameters
-    source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
+    source_str = await select_and_execute_search(search_api, query_list, search_api_config)
     urls = extract_urls_from_search_results(source_str)
 
     # Format system instructions
@@ -415,13 +412,12 @@ async def search_web(state: SectionState, config: RunnableConfig):
     configurable = Configuration.from_runnable_config(config)
     search_api = get_config_value(configurable.search_api)
     search_api_config = configurable.search_api_config or {}  # Get the config dict, default to empty
-    params_to_pass = get_search_params(search_api, search_api_config)  # Filter parameters
 
     # Web search
     query_list = [query.search_query for query in search_queries]
 
     # Search the web with parameters
-    source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
+    source_str = await select_and_execute_search(search_api, query_list, search_api_config)
     urls = extract_urls_from_search_results(source_str)
 
     return {
@@ -718,7 +714,6 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
     configurable = Configuration.from_runnable_config(config)
     search_api = get_config_value(configurable.search_api)
     search_api_config = configurable.search_api_config or {}
-    params_to_pass = get_search_params(search_api, search_api_config)
     queries_by_subtopic = state["deep_research_queries"]
 
     # Search the web for each subtopic
@@ -726,7 +721,7 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
     for subtopic_name, queries in queries_by_subtopic.items():
         query_list = [query.search_query for query in queries]
 
-        subtopic_source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
+        subtopic_source_str = await select_and_execute_search(search_api, query_list, search_api_config)
         results_by_subtopic[subtopic_name] = subtopic_source_str
 
     return {"deep_research_results": results_by_subtopic}

@@ -21,6 +21,8 @@ class SearchAPI(Enum):
     ARXIV = "arxiv"
     PUBMED = "pubmed"
     LINKUP = "linkup"
+    LOCAL = "local"
+    HYBRID = "hybrid"
 
 
 class PlannerProvider(Enum):

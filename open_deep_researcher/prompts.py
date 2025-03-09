@@ -15,7 +15,6 @@ The queries should:
 Make the queries specific enough to find high-quality, relevant sources while focusing on introductory content.
 </Task>
 """
-
 introduction_writer_instructions = """Write an introduction for a research report.
 
 <Report topic>
@@ -41,6 +40,7 @@ Reference sources inline according to the citation rules.
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
 - Each citation should directly correspond to a source URL.
+- For local documents, use the `file://` URL format provided in the source. (if applicable)
 - Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
 - Ensure all citations are naturally integrated into the sentence.
 </Citation Rules>
@@ -163,6 +163,7 @@ section_writer_instructions = """Write one section of a research report.
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
 - Each citation should directly correspond to a source URL.
+- For local documents, use the `file://` URL format provided in the source. (if applicable)
 - Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
 - Ensure all citations are naturally integrated into the sentence.
 </Citation Rules>
@@ -359,6 +360,14 @@ In both cases:
 - Focus on the most important information
 - Be objective and evidence-based
 - Write in the specified language
+
+<Citation Rules>
+- Use inline citations by embedding links in Markdown format: `[text](URL)`.
+- Each citation should directly correspond to a source URL.
+- For local documents, use the `file://` URL format provided in the source. (if applicable)
+- Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
+- Ensure all citations are naturally integrated into the sentence.
+</Citation Rules>
 </Task>
 """
 

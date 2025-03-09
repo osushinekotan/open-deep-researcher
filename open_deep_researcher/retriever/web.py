@@ -9,7 +9,7 @@ from langsmith import traceable
 from linkup import LinkupClient
 from tavily import AsyncTavilyClient
 
-from open_deep_researcher.utils import deduplicate_and_format_sources
+from open_deep_researcher.retriever.utils import deduplicate_and_format_sources
 
 
 @traceable
@@ -738,7 +738,7 @@ async def linkup_search(search_queries, depth: str | None = "standard"):
     return search_results
 
 
-async def select_and_execute_search(search_api: str, query_list: list[str], params_to_pass: dict) -> str:
+async def web_search(search_api: str, query_list: list[str], params_to_pass: dict) -> str:
     """Select and execute the appropriate search API.
 
     Args:
