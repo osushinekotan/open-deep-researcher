@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "ms-python.python",
+    "njpwerner.autodocstring",
+    "KevinRose.vsc-python-indent",
+    "charliermarsh.ruff",
+    "mhutchie.git-graph",
+    "ms-python.mypy-type-checker",
+    "ms-toolsai.jupyter",
+    "janisdd.vscode-edit-csv",
+    "GitHub.copilot",
+    "samuelcolvin.jinjahtml",
+    "ms-azuretools.vscode-docker"
+  ]
+}
