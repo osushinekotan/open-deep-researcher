@@ -23,12 +23,19 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
     for response in search_response:
         sources_list.extend(response["results"])
 
-    # Deduplicate by URL
-    unique_sources = {source["url"]: source for source in sources_list}
+    # Maintain original order while deduplicating by URL
+    unique_sources = []
+    seen_urls = set()
+
+    for source in sources_list:
+        url = source["url"]
+        if url not in seen_urls:
+            seen_urls.add(url)
+            unique_sources.append(source)
 
     # Format output
     formatted_text = "Content from sources:\n"
-    for _, source in enumerate(unique_sources.values(), 1):
+    for source in unique_sources:
         formatted_text += f"{'=' * 80}\n"  # Clear section separator
         formatted_text += f"Source: {source['title']}\n"
         formatted_text += f"{'-' * 80}\n"  # Subsection separator
