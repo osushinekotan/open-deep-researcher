@@ -13,10 +13,10 @@ async def hybrid_search(
     **kwargs,
 ) -> str:
     # ローカル検索とWeb検索を並行して実行
+    print(local_search_params)
     local_task = asyncio.create_task(
         local_search(
             search_queries,
-            **web_search_params,
             **local_search_params,
         )
     )

@@ -52,13 +52,19 @@ async def setup_local_documents(state: ReportState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     search_api_config = configurable.search_api_config or {}
-    local_document_path = search_api_config.get("local_document_path", None)
+
+    if configurable.search_api == "hybrid":
+        local_document_path = search_api_config["local_search_params"].get("local_document_path", None)
+        local_search_params = search_api_config["local_search_params"]
+    else:
+        local_document_path = search_api_config.get("local_document_path", None)
+        local_search_params = search_api_config
 
     # Skip if local documents are not provided
     if not local_document_path:
         return {"local_documents_ready": False}
 
-    vector_store = await process_documents(**search_api_config)
+    vector_store = await process_documents(**local_search_params)
     return {"local_documents_ready": vector_store is not None}
 
 

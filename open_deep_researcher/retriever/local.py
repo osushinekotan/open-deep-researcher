@@ -289,22 +289,11 @@ async def search_local_documents(
     """
     try:
         store_path = Path(vector_store_path)
-
-        # コレクション名が指定されていない場合は自動検出を試みる
-        if collection_name is None:
-            collection_name = detect_collection_name(store_path)
-            if collection_name:
-                print(f"Auto-detected collection name: {collection_name}")
-            else:
-                # 検出できなかった場合はデフォルト値を使用
-                collection_name = "default"
-                print(f"No collection name specified or detected, using default: {collection_name}")
-
-        # 埋め込みを初期化
         embeddings = initialize_embeddings(embedding_provider, embedding_model)
-
         vector_store = Chroma(
-            persist_directory=str(store_path), embedding_function=embeddings, collection_name=collection_name
+            persist_directory=str(store_path),
+            embedding_function=embeddings,
+            collection_name=collection_name,
         )
 
         results = vector_store.similarity_search_with_relevance_scores(query, k=top_k)
@@ -367,6 +356,16 @@ async def local_search(
     Returns:
         検索結果の文字列
     """
+
+    if collection_name is None:
+        collection_name = detect_collection_name(vector_store_path)
+        if collection_name:
+            print(f"Auto-detected collection name: {collection_name}")
+        else:
+            # 検出できなかった場合はデフォルト値を使用
+            collection_name = "default"
+            print(f"No collection name specified or detected, using default: {collection_name}")
+
     search_docs = []
     for query in search_queries:
         try:
