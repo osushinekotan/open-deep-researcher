@@ -1,3 +1,6 @@
+import hashlib
+
+
 def deduplicate_and_format_sources(search_response, max_tokens_per_source, include_raw_content=True):
     """
     Takes a list of search responses and formats them into a readable string.
@@ -23,14 +26,15 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
     for response in search_response:
         sources_list.extend(response["results"])
 
-    # Maintain original order while deduplicating by URL
+    # Maintain original order while deduplicating by content
     unique_sources = []
-    seen_urls = set()
-
+    seen_contents = set()
     for source in sources_list:
-        url = source["url"]
-        if url not in seen_urls:
-            seen_urls.add(url)
+        content = source["content"]
+        content_hash = hashlib.md5(content.encode()).hexdigest()
+
+        if content_hash not in seen_contents:
+            seen_contents.add(content_hash)
             unique_sources.append(source)
 
     # Format output
