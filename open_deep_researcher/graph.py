@@ -23,6 +23,7 @@ from open_deep_researcher.prompts import (
     section_writer_inputs,
     section_writer_instructions,
 )
+from open_deep_researcher.retriever.local import process_documents
 from open_deep_researcher.state import (
     Feedback,
     Queries,
@@ -45,6 +46,20 @@ from open_deep_researcher.utils import (
 )
 
 ## Nodes --
+
+
+async def setup_local_documents(state: ReportState, config: RunnableConfig):
+    # Get configuration
+    configurable = Configuration.from_runnable_config(config)
+    search_api_config = configurable.search_api_config or {}
+    local_document_path = search_api_config.get("local_document_path", None)
+
+    # Skip if local documents are not provided
+    if not local_document_path:
+        return {"local_documents_ready": False}
+
+    vector_store = await process_documents(**search_api_config)
+    return {"local_documents_ready": vector_store is not None}
 
 
 def extract_urls_from_search_results(source_str: str) -> list[str]:
@@ -843,6 +858,7 @@ builder = StateGraph(
     output=ReportStateOutput,
     config_schema=Configuration,
 )
+builder.add_node("setup_local_documents", setup_local_documents)
 builder.add_node("determine_if_question", determine_if_question)
 builder.add_node("generate_introduction", generate_introduction)
 builder.add_node("generate_report_plan", generate_report_plan)
@@ -854,7 +870,8 @@ builder.add_node("generate_conclusion", generate_conclusion)
 
 
 # Add edges
-builder.add_edge(START, "determine_if_question")
+builder.add_edge(START, "setup_local_documents")
+builder.add_edge("setup_local_documents", "determine_if_question")
 builder.add_edge("determine_if_question", "generate_introduction")
 builder.add_edge("generate_introduction", "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")

@@ -60,10 +60,11 @@ async def load_document(file_path: str) -> list[Document]:
 
 @traceable
 async def process_documents(  # noqa: C901
-    doc_dir: str,
+    local_document_path: str,
     vector_store_path: str,
     embedding_provider: str = "openai",
     embedding_model: str = "text-embedding-3-small",
+    **kwargs,
 ) -> Any | None:
     """指定されたディレクトリ内のドキュメントを処理して埋め込みを作成
 
@@ -87,7 +88,7 @@ async def process_documents(  # noqa: C901
 
     # ディレクトリ内のすべてのドキュメントを収集
     all_files = []
-    for root, _, files in os.walk(doc_dir):
+    for root, _, files in os.walk(local_document_path):
         for file in files:
             file_path = os.path.join(root, file)
             ext = os.path.splitext(file)[1].lower()
@@ -98,7 +99,7 @@ async def process_documents(  # noqa: C901
     new_files = []
     for file_path in all_files:
         file_hash = compute_file_hash(file_path)
-        rel_path = os.path.relpath(file_path, doc_dir)
+        rel_path = os.path.relpath(file_path, local_document_path)
 
         if rel_path not in doc_metadata or doc_metadata[rel_path] != file_hash:
             new_files.append(file_path)
@@ -133,7 +134,7 @@ async def process_documents(  # noqa: C901
 
         all_docs = []
         for file_path in new_files:
-            rel_path = os.path.relpath(file_path, doc_dir)
+            rel_path = os.path.relpath(file_path, local_document_path)
             print(f"ドキュメントを処理中: {rel_path}")
             docs = await load_document(file_path)
 
