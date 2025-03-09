@@ -58,6 +58,7 @@ class ReportState(TypedDict):
     conclusion: str  # Conclusion
     final_report: str  # Final report
     all_urls: Annotated[list[str], operator.add]  # List of all URLs referenced
+    local_documents_ready: bool  # Flag to indicate if local documents are ready
 
 
 class SectionState(TypedDict):
