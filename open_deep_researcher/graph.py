@@ -23,6 +23,7 @@ from open_deep_researcher.prompts import (
     section_writer_inputs,
     section_writer_instructions,
 )
+from open_deep_researcher.retriever.web import select_and_execute_search
 from open_deep_researcher.state import (
     Feedback,
     Queries,
@@ -42,7 +43,6 @@ from open_deep_researcher.utils import (
     get_config_value,
     get_search_params,
     normalize_heading_level,
-    select_and_execute_search,
 )
 
 ## Nodes --
@@ -316,9 +316,7 @@ def human_feedback(
             ]
         )
 
-    sections_str = "\n\n".join(
-        f"Section: {section.name}\n" f"Description: {section.description}\n" for section in sections
-    )
+    sections_str = "\n\n".join(f"Section: {section.name}\nDescription: {section.description}\n" for section in sections)
 
     # Get feedback on the report plan from interrupt
     interrupt_message = f"""Please provide feedback on the following report plan.
