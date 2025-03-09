@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from exa_py import Exa
@@ -20,7 +20,7 @@ def get_config_value(value):
     return value if isinstance(value, str) else value.value
 
 
-def get_search_params(search_api: str, search_api_config: Optional[dict[str, Any]]) -> dict[str, Any]:
+def get_search_params(search_api: str, search_api_config: dict[str, Any] | None) -> dict[str, Any]:
     """
     Filters the search_api_config dictionary to include only parameters accepted by the specified search API.
 
@@ -277,11 +277,11 @@ def perplexity_search(search_queries):
 @traceable
 async def exa_search(  # noqa
     search_queries,
-    max_characters: Optional[int] = None,
+    max_characters: int | None = None,
     num_results=5,
-    include_domains: Optional[list[str]] = None,
-    exclude_domains: Optional[list[str]] = None,
-    subpages: Optional[int] = None,
+    include_domains: list[str] | None = None,
+    exclude_domains: list[str] | None = None,
+    subpages: int | None = None,
 ):
     """Search the web using the Exa API.
 
@@ -812,7 +812,7 @@ async def pubmed_search_async(  # noqa
 
 
 @traceable
-async def linkup_search(search_queries, depth: Optional[str] = "standard"):
+async def linkup_search(search_queries, depth: str | None = "standard"):
     """
     Performs concurrent web searches using the Linkup API.
 

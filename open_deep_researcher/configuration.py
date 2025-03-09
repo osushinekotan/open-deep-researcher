@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass, field, fields
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
@@ -56,7 +56,7 @@ class Configuration:
 
     planner_provider: PlannerProvider = PlannerProvider.OPENAI
     planner_model: str = "gpt-4o"
-    planner_model_config: Optional[dict[str, Any]] = field(
+    planner_model_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_tokens": 8192,
             "temperature": 0.0,
@@ -65,7 +65,7 @@ class Configuration:
 
     writer_provider: WriterProvider = WriterProvider.OPENAI
     writer_model: str = "gpt-4o"
-    writer_model_config: Optional[dict[str, Any]] = field(
+    writer_model_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_tokens": 8192,
             "temperature": 0.0,
@@ -74,14 +74,14 @@ class Configuration:
 
     conclusion_writer_provider: WriterProvider = WriterProvider.OPENAI
     conclusion_writer_model: str = "o3-mini"
-    conclusion_writer_model_config: Optional[dict[str, Any]] = field(
+    conclusion_writer_model_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_tokens": 8192,
         }
     )
 
     search_api: SearchAPI = SearchAPI.TAVILY  # Default to TAVILY
-    search_api_config: Optional[dict[str, Any]] = field(
+    search_api_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_results": 5,
             "include_raw_content": False,
@@ -91,7 +91,7 @@ class Configuration:
     language: str = "japanese"
 
     @classmethod
-    def from_runnable_config(cls, config: Optional[RunnableConfig] = None) -> "Configuration":
+    def from_runnable_config(cls, config: RunnableConfig | None = None) -> "Configuration":
         """Create a Configuration instance from a RunnableConfig."""
         configurable = config["configurable"] if config and "configurable" in config else {}
         values: dict[str, Any] = {
