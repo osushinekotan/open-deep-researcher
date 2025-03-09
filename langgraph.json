@@ -1,7 +1,7 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "open_deep_research": "./open_deep_researcher/graph.py:graph"
+    "open_deep_researcher": "./open_deep_researcher/graph.py:graph"
   },
   "python_version": "3.11",
   "env": "./.env",
