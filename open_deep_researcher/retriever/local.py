@@ -306,7 +306,7 @@ async def search_local_documents(
                     "url": source,
                     "content": doc.page_content,
                     "score": score,
-                    "raw_content": None,
+                    "raw_content": "",
                 }
             )
 
