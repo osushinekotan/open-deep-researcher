@@ -25,6 +25,7 @@ dependencies = [
 dev = [
     "langgraph-cli[inmem]>=0.1.75",
     "mypy>=1.15.0",
+    "open-deep-researcher",
     "ruff>=0.9.10",
 ]
 
@@ -66,3 +67,6 @@ lint.ignore = [
     "N806",  # variable in function should be lowercase
     "N803",  # argument name should be lowercase
 ]
+
+[tool.uv.sources]
+open-deep-researcher = { workspace = true }
