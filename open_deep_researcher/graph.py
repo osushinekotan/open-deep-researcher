@@ -296,7 +296,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
 def human_feedback(
     state: ReportState, config: RunnableConfig
-) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
+) -> Command[Literal["generate_report_plan", "build_section_with_research"]]:
     """Get human feedback on the report plan and route to next steps.
 
     This node:
@@ -326,7 +326,7 @@ def human_feedback(
         return Command(
             goto=[
                 Send(
-                    "build_section_with_web_research",
+                    "build_section_with_research",
                     {"topic": topic, "section": s, "search_iterations": 0},
                 )
                 for s in sections
@@ -348,7 +348,7 @@ def human_feedback(
         return Command(
             goto=[
                 Send(
-                    "build_section_with_web_research",
+                    "build_section_with_research",
                     {"topic": topic, "section": s, "search_iterations": 0},
                 )
                 for s in sections
@@ -875,7 +875,7 @@ builder.add_node("determine_if_question", determine_if_question)
 builder.add_node("generate_introduction", generate_introduction)
 builder.add_node("generate_report_plan", generate_report_plan)
 builder.add_node("human_feedback", human_feedback)
-builder.add_node("build_section_with_web_research", section_builder.compile())
+builder.add_node("build_section_with_research", section_builder.compile())
 builder.add_node("gather_completed_sections", gather_completed_sections)
 builder.add_node("compile_final_report", compile_final_report)
 builder.add_node("generate_conclusion", generate_conclusion)
@@ -887,7 +887,7 @@ builder.add_edge("setup_local_documents", "determine_if_question")
 builder.add_edge("determine_if_question", "generate_introduction")
 builder.add_edge("generate_introduction", "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")
-builder.add_edge("build_section_with_web_research", "gather_completed_sections")
+builder.add_edge("build_section_with_research", "gather_completed_sections")
 builder.add_edge("gather_completed_sections", "generate_conclusion")
 builder.add_edge("generate_conclusion", "compile_final_report")
 builder.add_edge("compile_final_report", END)
