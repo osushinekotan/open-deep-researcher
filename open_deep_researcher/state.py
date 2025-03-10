@@ -12,6 +12,9 @@ class Section(BaseModel):
         description="Brief overview of the main topics and concepts to be covered in this section.",
     )
     content: str = Field(description="The content of the section.")
+    search_options: list[str] = Field(
+        description="List of search providers to use for this section (e.g., tavily, arxiv, pubmed, exa, local).",
+    )
 
 
 class Sections(BaseModel):
@@ -67,6 +70,10 @@ class SectionState(TypedDict):
     search_iterations: int  # Number of search iterations done
     search_queries: list[SearchQuery]  # List of search queries
     source_str: str  # String of formatted source content from web search
+
+    search_results_by_provider: dict[str, str]  # 各プロバイダの検索結果
+    search_queries_by_provider: dict[str, list[SearchQuery]]
+
     report_sections_from_research: str  # String of any completed sections from research to write final sections
     completed_sections: list[Section]  # Final key we duplicate in outer state for Send() API
 

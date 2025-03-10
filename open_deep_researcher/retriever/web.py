@@ -9,7 +9,7 @@ from langsmith import traceable
 from linkup import LinkupClient
 from tavily import AsyncTavilyClient
 
-from open_deep_researcher.retriever.utils import deduplicate_and_format_sources
+from open_deep_researcher.utils import deduplicate_and_format_sources
 
 
 @traceable

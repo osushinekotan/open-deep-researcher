@@ -23,7 +23,8 @@ from open_deep_researcher.prompts import (
     section_writer_inputs,
     section_writer_instructions,
 )
-from open_deep_researcher.retriever.local import process_documents
+from open_deep_researcher.retriever.local import local_search, process_documents
+from open_deep_researcher.retriever.web import web_search
 from open_deep_researcher.state import (
     Feedback,
     Queries,
@@ -42,8 +43,35 @@ from open_deep_researcher.utils import (
     generate_detail_heading,
     get_config_value,
     normalize_heading_level,
-    select_and_execute_search,
 )
+
+PROVIDER_DESCRIPTIONS = {
+    "tavily": "General web search, good for broad information gathering",
+    "arxiv": "Academic papers and preprints, best for scientific topics",
+    "pubmed": "Medical and biomedical research, best for health topics",
+    "exa": "Comprehensive web search with additional context",
+    "local": "Search through locally stored documents",
+}
+
+
+def get_provider_config(configurable: Configuration, provider_name: str) -> dict:
+    """指定された検索プロバイダの設定を取得する"""
+    provider_str = provider_name.lower()
+
+    if provider_str == "tavily":
+        return configurable.tavily_search_config or {}
+    elif provider_str == "arxiv":
+        return configurable.arxiv_search_config or {}
+    elif provider_str == "pubmed":
+        return configurable.pubmed_search_config or {}
+    elif provider_str == "exa":
+        return configurable.exa_search_config or {}
+    elif provider_str == "local":
+        return configurable.local_search_config or {}
+    else:
+        # デフォルト設定（空の辞書）を返す
+        return {}
+
 
 ## Nodes --
 
@@ -95,31 +123,17 @@ def extract_urls_from_search_results(source_str: str) -> list[str]:
 
 
 async def generate_introduction(state: ReportState, config: RunnableConfig):
-    """Generate an introduction for the report.
-
-    This node:
-    1. Generates search queries to gather background information
-    2. Performs web searches using those queries
-    3. Uses an LLM to generate an introduction based on search results
-
-    Args:
-        state: Current graph state containing the report topic
-        config: Configuration for models, search APIs, etc.
-
-    Returns:
-        Dict containing the generated introduction and collected URLs
-    """
+    """イントロダクションを生成する"""
     # Inputs
     topic = state["topic"]
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     number_of_queries = configurable.number_of_queries
-    search_source = get_config_value(configurable.search_source)
-    web_config = configurable.web_search_config or {}
-    local_config = configurable.local_search_config or {}
+    introduction_provider = configurable.introduction_search_provider
+    provider_config = get_provider_config(configurable, provider_name=introduction_provider)
 
-    # Set writer model (model used for query writing)
+    # Set writer model
     writer_provider = get_config_value(configurable.writer_provider)
     writer_model_name = get_config_value(configurable.writer_model)
     writer_model_config = configurable.writer_model_config or {}
@@ -130,6 +144,7 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
     system_instructions_query = introduction_query_writer_instructions.format(
         topic=topic,
         number_of_queries=number_of_queries,
+        search_provider=introduction_provider,
     )
     system_instructions_query += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -141,11 +156,13 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
         ]
     )
 
-    # Web search
+    # Execute search
     query_list = [query.search_query for query in results.queries]
-    source_str = await select_and_execute_search(
-        search_source, query_list, web_config=web_config, local_config=local_config
-    )
+
+    if introduction_provider == "local":
+        source_str = await local_search(query_list, **provider_config)
+    else:
+        source_str = await web_search(introduction_provider, query_list, provider_config)
 
     # Extract URLs from search results for references
     urls = extract_urls_from_search_results(source_str)
@@ -199,7 +216,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     """
     # Inputs
     topic = state["topic"]
-    is_question = state.get("is_question", False)  # default to False = report
+    is_question = state.get("is_question", False)
     feedback = state.get("feedback_on_report_plan", None)
     introduction = state.get("introduction", "")
 
@@ -207,15 +224,15 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     configurable = Configuration.from_runnable_config(config)
     report_structure = configurable.report_structure
     number_of_queries = configurable.number_of_queries
-    search_source = get_config_value(configurable.search_source)
-    web_config = configurable.web_search_config or {}
-    local_config = configurable.local_search_config or {}
+    planning_provider = configurable.planning_search_provider
+    provider_config = get_provider_config(configurable, provider_name=planning_provider)
+    available_providers = [provider.value for provider in configurable.available_search_providers]
 
     # Convert JSON object to string if necessary
     if isinstance(report_structure, dict):
         report_structure = str(report_structure)
 
-    # Set writer model (model used for query writing)
+    # Set writer model
     writer_provider = get_config_value(configurable.writer_provider)
     writer_model_name = get_config_value(configurable.writer_model)
     writer_model_config = configurable.writer_model_config or {}
@@ -227,6 +244,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         topic=topic,
         report_organization=report_structure,
         number_of_queries=number_of_queries,
+        search_provider=planning_provider,
     )
     system_instructions_query += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -238,12 +256,19 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         ]
     )
 
-    # Web search
+    # Execute search
     query_list = [query.search_query for query in results.queries]
-    source_str = await select_and_execute_search(
-        search_source, query_list, web_config=web_config, local_config=local_config
-    )
+
+    if planning_provider == "local":
+        source_str = await local_search(query_list, **provider_config)
+    else:
+        source_str = await web_search(planning_provider, query_list, provider_config)
+
     urls = extract_urls_from_search_results(source_str)
+
+    search_provider_descriptions = "\n  ".join(
+        [f"- {provider}: {PROVIDER_DESCRIPTIONS.get(provider, '')}" for provider in available_providers]
+    )
 
     # Format system instructions
     if is_question:
@@ -252,6 +277,8 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
             report_organization=report_structure,
             context=source_str + "\n\nINTRODUCTION:\n" + introduction if introduction else source_str,
             feedback=feedback,
+            available_search_providers=", ".join(available_providers),
+            search_provider_descriptions=search_provider_descriptions,
         )
     else:
         system_instructions_sections = report_planner_instructions.format(
@@ -259,6 +286,8 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
             report_organization=report_structure,
             context=source_str + "\n\nINTRODUCTION:\n" + introduction if introduction else source_str,
             feedback=feedback,
+            available_search_providers=", ".join(available_providers),
+            search_provider_descriptions=search_provider_descriptions,
         )
     system_instructions_sections += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -269,7 +298,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Report planner instructions
     planner_message = """Generate the sections of the report. Your response must include a 'sections' field containing a list of sections.
-                        Each section must have: name, description, plan, research, and content fields."""
+                        Each section must have: name, description, plan, research, search_options, and content fields."""
 
     # With other models, we can use with_structured_output
     planner_llm = init_chat_model(
@@ -289,6 +318,11 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Get sections
     sections = report_sections.sections
+    default_provider = configurable.default_search_provider.value
+    # search_options が空の場合は、デフォルト値を設定
+    for section in sections:
+        if not hasattr(section, "search_options") or not section.search_options:
+            section.search_options = [default_provider]
 
     sections = [s for s in sections if s.name.lower() != "conclusion"]
     return {"sections": sections, "is_question": is_question, "all_urls": urls}
@@ -319,6 +353,14 @@ def human_feedback(
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
+    available_providers = [provider.value for provider in configurable.available_search_providers]
+    for section in sections:
+        # 不正なプロバイダをフィルタリング
+        section.search_options = [provider for provider in section.search_options if provider in available_providers]
+
+        # 検索オプションが空の場合、デフォルトプロバイダを追加
+        if not section.search_options:
+            section.search_options = [configurable.default_search_provider.value]
 
     # Check if we should skip human feedback
     if configurable.skip_human_feedback:
@@ -333,18 +375,23 @@ def human_feedback(
             ]
         )
 
-    sections_str = "\n\n".join(f"Section: {section.name}\nDescription: {section.description}\n" for section in sections)
+    # 各セクションの情報を詳細に表示
+    sections_str = "\n\n".join(
+        f"セクション: {section.name}\n説明: {section.description}\n検索オプション: {', '.join(section.search_options)}"
+        for section in sections
+    )
 
-    # Get feedback on the report plan from interrupt
-    interrupt_message = f"""Please provide feedback on the following report plan.
+    # レポート計画に関するフィードバックを取得
+    interrupt_message = f"""以下のレポート計画についてフィードバックしてください。
                         \n\n{sections_str}\n
-                        \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
+                        \nレポート計画は要件を満たしていますか？
+                        \n計画を承認する場合は 'true' を入力してください。
+                        \n計画を再生成するためのフィードバックを提供する場合は、具体的な指示（セクションの追加・削除・変更、検索オプションの調整など）を入力してください:"""
 
     feedback = interrupt(interrupt_message)
 
     # If the user approves the report plan, kick off section writing
     if isinstance(feedback, bool) and feedback is True:
-        # Treat this as approve and kick off section writing
         return Command(
             goto=[
                 Send(
@@ -364,87 +411,127 @@ def human_feedback(
 
 
 def generate_queries(state: SectionState, config: RunnableConfig):
-    """Generate search queries for researching a specific section.
-
-    This node uses an LLM to generate targeted search queries based on the
-    section topic and description.
-
-    Args:
-        state: Current state containing section details
-        config: Configuration including number of queries to generate
-
-    Returns:
-        Dict containing the generated search queries
-    """
+    """各検索プロバイダごとに検索クエリを生成する"""
     # Get state
     topic = state["topic"]
     section = state["section"]
+    search_options = section.search_options
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     number_of_queries = configurable.number_of_queries
+    available_providers = [provider.value for provider in configurable.available_search_providers]
+    # 利用可能なプロバイダのみをフィルタリング
+    search_options = [provider for provider in search_options if provider in available_providers]
+    if not search_options:
+        search_options = [configurable.default_search_provider.value]
 
-    # Generate queries
+    # Generate queries for each provider
     writer_provider = get_config_value(configurable.writer_provider)
     writer_model_name = get_config_value(configurable.writer_model)
     writer_model_config = configurable.writer_model_config or {}
     writer_model = init_chat_model(model=writer_model_name, model_provider=writer_provider, **writer_model_config)
     structured_llm = writer_model.with_structured_output(Queries)
 
-    # Format system instructions
-    system_instructions = query_writer_instructions.format(
-        topic=topic,
-        section_topic=section.description,
-        number_of_queries=number_of_queries,
-    )
-    system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
+    search_queries_by_provider = {}
 
-    # Generate queries
-    queries = structured_llm.invoke(
-        [
-            SystemMessage(content=system_instructions),
-            HumanMessage(content="Generate search queries on the provided topic."),
-        ]
-    )
+    for provider in search_options:
+        # Format system instructions for this provider
+        system_instructions = query_writer_instructions.format(
+            topic=topic,
+            section_topic=section.description,
+            search_provider=provider,
+            number_of_queries=number_of_queries,
+        )
+        system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
 
-    return {"search_queries": queries.queries}
+        # Generate queries for this provider
+        queries = structured_llm.invoke(
+            [
+                SystemMessage(content=system_instructions),
+                HumanMessage(content=f"Generate search queries optimized for {provider} search on the provided topic."),
+            ]
+        )
+
+        search_queries_by_provider[provider] = queries.queries
+
+    # Default provider for backward compatibility
+    default_provider = search_options[0] if search_options else "tavily"
+
+    return {
+        "search_queries": search_queries_by_provider.get(default_provider, []),  # 後方互換性のため
+        "search_queries_by_provider": search_queries_by_provider,
+    }
 
 
 async def search(state: SectionState, config: RunnableConfig):
-    """Execute web searches for the section queries.
-
-    This node:
-    1. Takes the generated queries
-    2. Executes searches using configured search API
-    3. Formats results into usable context
-
-    Args:
-        state: Current state with search queries
-        config: Search API configuration
-
-    Returns:
-        Dict with search results and updated iteration count
-    """
+    """各プロバイダで検索を実行し、結果を統合する"""
     # Get state
-    search_queries = state["search_queries"]
+    search_queries_by_provider = state["search_queries_by_provider"]
+    section = state["section"]
+    search_options = section.search_options
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    search_source = get_config_value(configurable.search_source)
-    web_config = configurable.web_search_config or {}
-    local_config = configurable.local_search_config or {}
 
-    # Web search
-    query_list = [query.search_query for query in search_queries]
-    source_str = await select_and_execute_search(
-        search_source, query_list, web_config=web_config, local_config=local_config
+    # 各プロバイダごとに検索実行
+    search_results_by_provider = {}
+    all_urls = []
+
+    for provider in search_options:
+        try:
+            queries = search_queries_by_provider.get(provider, [])
+            if not queries:
+                continue
+
+            query_list = [query.search_query for query in queries]
+
+            # プロバイダごとの設定を取得
+
+            if provider == "tavily":
+                search_result = await web_search(
+                    "tavily", query_list, params_to_pass=get_provider_config(configurable, provider)
+                )
+            elif provider == "arxiv":
+                search_result = await web_search(
+                    "arxiv", query_list, params_to_pass=get_provider_config(configurable, provider)
+                )
+            elif provider == "pubmed":
+                search_result = await web_search(
+                    "pubmed", query_list, params_to_pass=get_provider_config(configurable, provider)
+                )
+            elif provider == "exa":
+                search_result = await web_search(
+                    "exa", query_list, params_to_pass=get_provider_config(configurable, provider)
+                )
+            elif provider == "local":
+                search_result = await local_search(query_list, **get_provider_config(configurable, provider))
+            else:
+                continue
+
+            search_results_by_provider[provider] = search_result
+
+            # URLを収集
+            provider_urls = extract_urls_from_search_results(search_result)
+            all_urls.extend(provider_urls)
+
+        except Exception as e:
+            print(f"プロバイダ '{provider}' の検索中にエラーが発生しました: {str(e)}")
+            search_results_by_provider[provider] = f"エラー: {str(e)}"
+
+    # 全プロバイダの結果を結合
+    combined_results = "\n\n".join(
+        [
+            f"=== {provider.upper()} SEARCH RESULTS ===\n{result}"
+            for provider, result in search_results_by_provider.items()
+        ]
     )
-    urls = extract_urls_from_search_results(source_str)
 
     return {
-        "source_str": source_str,
+        "source_str": combined_results,
+        "search_results_by_provider": search_results_by_provider,
         "search_iterations": state["search_iterations"] + 1,
-        "all_urls": urls,
+        "all_urls": all_urls,
     }
 
 
@@ -669,6 +756,14 @@ def deep_research_planner(state: SectionState, config: RunnableConfig):
         model_provider=planner_provider,
         **planner_model_config,
     )
+    configurable = Configuration.from_runnable_config(config)
+    available_providers = [provider.value for provider in configurable.available_search_providers]
+    deep_research_providers = (
+        getattr(configurable, "deep_research_providers", None)
+        or [configurable.default_search_provider.value]
+        or section.search_options
+    )
+    deep_research_providers = [provider for provider in deep_research_providers if provider in available_providers]
 
     system_instructions = deep_research_planner_instructions.format(
         topic=topic,
@@ -676,6 +771,7 @@ def deep_research_planner(state: SectionState, config: RunnableConfig):
         section_content=section.content,
         current_depth=current_depth,
         breadth=breadth,
+        search_providers=", ".join(deep_research_providers),
     )
     system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -700,32 +796,49 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
     section = state["section"]
     subtopics = state["deep_research_topics"]
 
+    # 検索プロバイダを取得
+    available_providers = [provider.value for provider in configurable.available_search_providers]
+    deep_research_providers = (
+        getattr(configurable, "deep_research_providers", None)
+        or [configurable.default_search_provider.value]
+        or section.search_options
+    )
+    deep_research_providers = [provider for provider in deep_research_providers if provider in available_providers]
+
     # Get writer model
     writer_provider = get_config_value(configurable.writer_provider)
     writer_model_name = get_config_value(configurable.writer_model)
     writer_model_config = configurable.writer_model_config or {}
     writer_model = init_chat_model(model=writer_model_name, model_provider=writer_provider, **writer_model_config)
 
+    # 各サブトピックとプロバイダのペアごとにクエリを生成
     queries_by_subtopic = {}
-    # Generate queries for each subtopic
     for subtopic in subtopics:
-        system_instructions = deep_research_queries_instructions.format(
-            topic=topic,
-            section_name=section.name,
-            subtopic_name=subtopic.name,
-            subtopic_description=subtopic.description,
-            number_of_queries=number_of_queries,
-        )
-        system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
+        subtopic_queries = []
 
-        structured_llm = writer_model.with_structured_output(Queries)
-        queries = structured_llm.invoke(
-            [
-                SystemMessage(content=system_instructions),
-                HumanMessage(content="このサブトピックに関する検索クエリを生成してください。"),
-            ]
-        )
-        queries_by_subtopic[subtopic.name] = queries.queries
+        for provider in deep_research_providers:
+            system_instructions = deep_research_queries_instructions.format(
+                topic=topic,
+                section_name=section.name,
+                subtopic_name=subtopic.name,
+                subtopic_description=subtopic.description,
+                search_provider=provider,
+                number_of_queries=number_of_queries,
+            )
+            system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
+
+            structured_llm = writer_model.with_structured_output(Queries)
+            queries = structured_llm.invoke(
+                [
+                    SystemMessage(content=system_instructions),
+                    HumanMessage(content=f"このサブトピックに関する{provider}検索用のクエリを生成してください。"),
+                ]
+            )
+
+            # このプロバイダのクエリを追加
+            subtopic_queries.extend(queries.queries)
+
+        queries_by_subtopic[subtopic.name] = subtopic_queries
 
     return {"deep_research_queries": queries_by_subtopic}
 
@@ -733,23 +846,44 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
 async def deep_research_search(state: SectionState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    search_source = get_config_value(configurable.search_source)
-    web_config = configurable.web_search_config or {}
-    local_config = configurable.local_search_config or {}
     queries_by_subtopic = state["deep_research_queries"]
 
-    # Search the web for each subtopic
+    # セクションの検索オプションを取得（ここでは深掘り検索用のプロバイダを定義可能）
+    # 深掘り検索用に特定のプロバイダを使用するか、セクションの既存オプションを使用
+    section = state["section"]
+    available_providers = [provider.value for provider in configurable.available_search_providers]
+    deep_research_providers = (
+        getattr(configurable, "deep_research_providers", None)
+        or [configurable.default_search_provider.value]
+        or section.search_options
+    )
+    deep_research_providers = [provider for provider in deep_research_providers if provider in available_providers]
+
+    # 各サブトピックごとに検索を実行
     results_by_subtopic = {}
     for subtopic_name, queries in queries_by_subtopic.items():
         query_list = [query.search_query for query in queries]
 
-        subtopic_source_str = await select_and_execute_search(
-            search_source,
-            query_list,
-            web_config=web_config,
-            local_config=local_config,
-        )
-        results_by_subtopic[subtopic_name] = subtopic_source_str
+        # 複数プロバイダの結果を結合
+        subtopic_results = []
+        for provider in deep_research_providers:
+            try:
+                # プロバイダごとの設定を取得
+                provider_config = get_provider_config(configurable, provider)
+
+                # 適切な検索関数を呼び出す
+                if provider == "local":
+                    result = await local_search(query_list, **provider_config)
+                else:
+                    result = await web_search(provider, query_list, provider_config)
+
+                subtopic_results.append(f"=== {provider.upper()} SEARCH RESULTS ===\n{result}")
+            except Exception as e:
+                print(f"deep research '{provider}' の使用中にエラーが発生しました: {str(e)}")
+                subtopic_results.append(f"=== {provider.upper()} SEARCH ERROR ===\n{str(e)}")
+
+        # 結果を結合
+        results_by_subtopic[subtopic_name] = "\n\n".join(subtopic_results)
 
     return {"deep_research_results": results_by_subtopic}
 

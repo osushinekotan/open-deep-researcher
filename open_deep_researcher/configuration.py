@@ -32,6 +32,14 @@ class WriterProvider(Enum):
     GROQ = "groq"
 
 
+class SearchProvider(Enum):
+    TAVILY = "tavily"
+    ARXIV = "arxiv"
+    PUBMED = "pubmed"
+    EXA = "exa"
+    LOCAL = "local"
+
+
 @dataclass(kw_only=True)
 class Configuration:
     """The configurable fields for the chatbot."""
@@ -49,7 +57,7 @@ class Configuration:
     deep_research_depth: int = 1
     deep_research_breadth: int = 2
 
-    skip_human_feedback: bool = True
+    skip_human_feedback: bool = False
 
     planner_provider: PlannerProvider = PlannerProvider.OPENAI
     planner_model: str = "gpt-4o"
@@ -77,12 +85,34 @@ class Configuration:
         }
     )
 
-    search_source: SearchSource = SearchSource.WEB
-    web_search_config: dict[str, Any] | None = field(
+    introduction_search_provider: SearchProvider = SearchProvider.TAVILY
+    planning_search_provider: SearchProvider = SearchProvider.TAVILY
+    # 検索時に利用可能なプロバイダーのリストを指定 (human feedback で確定させる)
+    available_search_providers: list[SearchProvider] = field(
+        default_factory=lambda: [
+            SearchProvider.TAVILY,
+            # SearchProvider.ARXIV,
+            # SearchProvider.PUBMED,
+            # SearchProvider.EXA,
+            # SearchProvider.LOCAL,
+        ]
+    )
+    # deep_research 時に利用するプロバイダーのリストを指定
+    deep_research_providers: list[SearchProvider] = field(default_factory=lambda: [SearchProvider.TAVILY])
+    default_search_provider = (
+        SearchProvider.TAVILY
+    )  # デフォルトの検索プロバイダー (report plan で provider が指定されていない場合に利用)
+
+    tavily_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
-            "provider": "tavily",  # Default to Tavily
             "max_results": 5,
             "include_raw_content": False,
+        }
+    )
+    arxiv_search_config: dict[str, Any] | None = field(
+        default_factory=lambda: {
+            "load_max_docs": 5,
+            "get_full_documents": True,
         }
     )
     local_search_config: dict[str, Any] | None = field(

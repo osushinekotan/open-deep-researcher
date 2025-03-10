@@ -69,7 +69,6 @@ The queries should:
 Make the queries specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure.
 </Task>
 """
-
 report_planner_instructions = """I want a plan for a report that is concise and focused.
 
 <Report topic>
@@ -87,6 +86,11 @@ Here is context to use to plan the sections of the report:
 {context}
 </Context>
 
+<Available search providers>
+The following search providers are available for this report:
+{available_search_providers}
+</Available search providers>
+
 <Task>
 Generate a list of sections for the report. Your plan should be tight and focused with NO overlapping sections or unnecessary filler.
 
@@ -103,7 +107,11 @@ Each section should have the fields:
 - Name - Name for this section of the report.
 - Description - Brief overview of the main topics covered in this section.
 - Research - Whether to perform web research for this section of the report. (default: True, but `conclusion`, `summary`. or `introduction` sections should be False)
+- Search Options - List of search providers to use for this section. Choose from the available providers listed above.
+  {search_provider_descriptions}
 - Content - The content of the section, which you will leave blank for now.
+
+Choose appropriate search options based on the section topic and available search providers. Always include at least one search provider for each section that has Research=True.
 
 Integration guidelines:
 - Include examples and implementation details within main topic sections, not as separate sections
@@ -119,7 +127,7 @@ Here is feedback on the report structure from review (if any):
 </Feedback>
 """
 
-query_writer_instructions = """You are an expert technical writer crafting targeted web search queries that will gather comprehensive information for writing a technical report section.
+query_writer_instructions = """You are an expert technical writer crafting targeted search queries that will gather comprehensive information for writing a technical report section.
 
 <Report topic>
 {topic}
@@ -129,13 +137,24 @@ query_writer_instructions = """You are an expert technical writer crafting targe
 {section_topic}
 </Section topic>
 
+<Search provider>
+{search_provider}
+</Search provider>
+
 <Task>
-Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information above the section topic.
+Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information above the section topic, specifically optimized for the {search_provider} search engine.
+
+Customize your queries based on the search provider:
+- For "tavily" (general web search): Create general queries with good keyword coverage
+- For "arxiv": Create queries suitable for academic paper search, focusing on technical terms and research concepts
+- For "pubmed": Create queries optimized for medical literature, using appropriate medical terminology
+- For "exa": Create detailed web search queries with high specificity
+- For "local": Create queries that would match keywords in locally stored documents
 
 The queries should:
-
 1. Be related to the topic
 2. Examine different aspects of the topic
+3. Use terminology and structure appropriate for the search provider
 
 Make the queries specific enough to find high-quality, relevant sources.
 </Task>
@@ -275,12 +294,24 @@ deep_research_queries_instructions = """あなたは検索クエリ作成の専�
 説明: {subtopic_description}
 </Subtopic>
 
+<Search Provider>
+{search_provider}
+</Search Provider>
+
 <Task>
 このサブトピックについて深く掘り下げるための {number_of_queries} 個の検索クエリを生成してください。
 クエリは以下の特性を持つべきです：
 1. 具体的で明確であること
 2. サブトピックの異なる側面をカバーすること
 3. 主題に関連する最新かつ詳細な情報を返す可能性が高いこと
+4. 指定された検索プロバイダ ({search_provider}) に最適化されていること
+
+検索プロバイダごとにクエリを最適化してください：
+- "tavily" (一般的なWeb検索): 良好なキーワードカバレッジを持つ一般的なクエリ
+- "arxiv": 学術論文検索に適したクエリ、専門用語や研究概念に焦点を当てる
+- "pubmed": 医学文献に最適化されたクエリ、適切な医学用語を使用
+- "exa": 高い特異性を持つ詳細なWeb検索クエリ
+- "local": ローカルに保存された文書に一致するキーワードを持つクエリ
 
 各クエリは単独で使用でき、高品質なソース情報を見つけられるものにしてください。
 </Task>
@@ -386,6 +417,11 @@ question_to_plan_instructions = """You are helping to plan a research report tha
 {context}
 </Context>
 
+<Available search providers>
+The following search providers are available for this report:
+{available_search_providers}
+</Available search providers>
+
 <Task>
 Create a plan for a report that will effectively answer the user's question. The plan should include sections that, when combined, will provide a comprehensive answer.
 
@@ -398,7 +434,12 @@ Create a plan for a report that will effectively answer the user's question. The
 Each section should have the fields:
 - Name - Name for this section of the report
 - Description - Brief overview of what this section will explore and how it contributes to answering the question
+- Research - Whether to perform research for this section of the report (usually true for all sections except summary sections)
+- Search Options - List of search providers to use for this section. Choose from the available providers listed above.
+  {search_provider_descriptions}
 - Content - The content of the section, which you will leave blank for now
+
+Choose appropriate search options based on the section topic and available search providers. Always include at least one search provider for each section that has Research=True.
 
 Do NOT include "Introduction" or "Conclusion" sections in the plan.
 </Task>

@@ -15,7 +15,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langsmith import traceable
 
-from open_deep_researcher.retriever.utils import deduplicate_and_format_sources
+from open_deep_researcher.utils import deduplicate_and_format_sources
 
 LOADER_MAPPING = {
     ".pdf": PyPDFLoader,
