@@ -6,7 +6,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
 from app.config import DOCUMENTS_DIR, VECTOR_STORE_DIR
-from app.models.research import PlanResponse, ResearchConfig, ResearchStatus, SectionModel
+from app.models.research import DEFAULT_REPORT_STRUCTURE, PlanResponse, ResearchConfig, ResearchStatus, SectionModel
 from open_deep_researcher.graph import builder
 
 
@@ -50,7 +50,7 @@ class ResearchManager:
                 await self._process_event(research_id, event)
 
                 # ヒューマンフィードバックが必要な場合は一時停止
-                skip_human_feedback = thread["configurable"].get("skip_human_feedback", False)
+                skip_human_feedback = configurable.get("skip_human_feedback", False)
                 if not skip_human_feedback and self.research_tasks[research_id].get("waiting_for_feedback", False):
                     self.research_tasks[research_id]["status"] = "waiting_for_feedback"
                     break
@@ -90,7 +90,7 @@ class ResearchManager:
             task["status"] = "executing"
 
             # フィードバックに基づいてリサーチを続行
-            if (None) or (feedback.strip() == ""):
+            if feedback is None or feedback.strip() == "":
                 command = Command(resume=True)  # フィードバックが提供されない場合は再開
                 print("No feedback provided - resuming research")
             else:
@@ -193,18 +193,43 @@ class ResearchManager:
         # デフォルト設定
         configurable = {
             "thread_id": research_id,
-            "skip_human_feedback": False,  # デフォルトはfalse
+            # 基本設定
+            "report_structure": DEFAULT_REPORT_STRUCTURE,
+            "number_of_queries": 2,
+            "max_reflection": 2,
+            # 単語数制限
+            "max_section_words": 1000,
+            "max_subsection_words": 500,
+            "max_introduction_words": 500,
+            "max_conclusion_words": 500,
+            # 深掘り設定
+            "skip_human_feedback": False,
             "enable_deep_research": True,
-            "search_source": "web",
-            "web_search_config": {
-                "provider": "tavily",
+            "deep_research_depth": 1,
+            "deep_research_breadth": 2,
+            # 検索プロバイダー設定
+            "introduction_search_provider": "tavily",
+            "planning_search_provider": "tavily",
+            "available_search_providers": ["tavily"],
+            "deep_research_providers": ["tavily"],
+            "default_search_provider": "tavily",
+            # プロバイダー別設定
+            "tavily_search_config": {
                 "max_results": 5,
                 "include_raw_content": False,
+            },
+            "arxiv_search_config": {
+                "load_max_docs": 5,
+                "get_full_documents": True,
             },
             "local_search_config": {
                 "vector_store_path": str(VECTOR_STORE_DIR),
                 "local_document_path": str(DOCUMENTS_DIR),
+                "embedding_provider": "openai",
+                "embedding_model": "text-embedding-3-small",
             },
+            # 言語設定
+            "language": "japanese",
         }
 
         # ユーザー設定で上書き

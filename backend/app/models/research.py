@@ -11,13 +11,6 @@ Main Body Sections:
 """
 
 
-
-class SearchSourceEnum(str, Enum):
-    WEB = "web"
-    LOCAL = "local"
-    HYBRID = "hybrid"
-
-
 class PlannerProviderEnum(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
@@ -30,30 +23,60 @@ class WriterProviderEnum(str, Enum):
     GROQ = "groq"
 
 
+class SearchProviderEnum(str, Enum):
+    TAVILY = "tavily"
+    ARXIV = "arxiv"
+    PUBMED = "pubmed"
+    EXA = "exa"
+    LOCAL = "local"
+
+
 class ResearchConfig(BaseModel):
+    # レポート構造と基本設定
     report_structure: str | None = DEFAULT_REPORT_STRUCTURE
     number_of_queries: int = 2
     max_reflection: int = 2
+
+    # 単語数制限
     max_section_words: int = 1000
     max_subsection_words: int = 500
     max_introduction_words: int = 500
     max_conclusion_words: int = 500
+
+    # 深掘り調査設定
     enable_deep_research: bool = True
     deep_research_depth: int = 1
     deep_research_breadth: int = 2
-    skip_human_feedback: bool = False  # APIではデフォルトでfalseに設定
+
+    # フィードバック設定
+    skip_human_feedback: bool = False
+
+    # モデル設定
     planner_provider: PlannerProviderEnum = PlannerProviderEnum.OPENAI
     planner_model: str = "gpt-4o"
     planner_model_config: dict[str, Any] | None = None
+
     writer_provider: WriterProviderEnum = WriterProviderEnum.OPENAI
     writer_model: str = "gpt-4o"
     writer_model_config: dict[str, Any] | None = None
+
     conclusion_writer_provider: WriterProviderEnum = WriterProviderEnum.OPENAI
     conclusion_writer_model: str = "o3-mini"
     conclusion_writer_model_config: dict[str, Any] | None = None
-    search_source: SearchSourceEnum = SearchSourceEnum.WEB
-    web_search_config: dict[str, Any] | None = None
+
+    # 検索プロバイダー設定
+    introduction_search_provider: SearchProviderEnum = SearchProviderEnum.TAVILY
+    planning_search_provider: SearchProviderEnum = SearchProviderEnum.TAVILY
+    available_search_providers: list[SearchProviderEnum] = [SearchProviderEnum.TAVILY]
+    deep_research_providers: list[SearchProviderEnum] = [SearchProviderEnum.TAVILY]
+    default_search_provider: SearchProviderEnum = SearchProviderEnum.TAVILY
+
+    # 検索プロバイダー別の設定
+    tavily_search_config: dict[str, Any] | None = None
+    arxiv_search_config: dict[str, Any] | None = None
     local_search_config: dict[str, Any] | None = None
+
+    # 言語設定
     language: str = "japanese"
 
 
