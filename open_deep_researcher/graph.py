@@ -51,20 +51,15 @@ from open_deep_researcher.utils import (
 async def setup_local_documents(state: ReportState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    search_api_config = configurable.search_api_config or {}
+    local_config = configurable.local_search_config or {}
 
-    if configurable.search_api == "hybrid":
-        local_document_path = search_api_config["local_search_params"].get("local_document_path", None)
-        local_search_params = search_api_config["local_search_params"]
-    else:
-        local_document_path = search_api_config.get("local_document_path", None)
-        local_search_params = search_api_config
+    local_document_path = local_config.get("local_document_path", None)
 
     # Skip if local documents are not provided
     if not local_document_path:
         return {"local_documents_ready": False}
 
-    vector_store = await process_documents(**local_search_params)
+    vector_store = await process_documents(**local_config)
     return {"local_documents_ready": vector_store is not None}
 
 
@@ -120,8 +115,9 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     number_of_queries = configurable.number_of_queries
-    search_api = get_config_value(configurable.search_api)
-    search_api_config = configurable.search_api_config or {}
+    search_source = get_config_value(configurable.search_source)
+    web_config = configurable.web_search_config or {}
+    local_config = configurable.local_search_config or {}
 
     # Set writer model (model used for query writing)
     writer_provider = get_config_value(configurable.writer_provider)
@@ -147,7 +143,9 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
 
     # Web search
     query_list = [query.search_query for query in results.queries]
-    source_str = await select_and_execute_search(search_api, query_list, search_api_config)
+    source_str = await select_and_execute_search(
+        search_source, query_list, web_config=web_config, local_config=local_config
+    )
 
     # Extract URLs from search results for references
     urls = extract_urls_from_search_results(source_str)
@@ -209,8 +207,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     configurable = Configuration.from_runnable_config(config)
     report_structure = configurable.report_structure
     number_of_queries = configurable.number_of_queries
-    search_api = get_config_value(configurable.search_api)
-    search_api_config = configurable.search_api_config or {}  # Get the config dict, default to empty
+    search_source = get_config_value(configurable.search_source)
+    web_config = configurable.web_search_config or {}
+    local_config = configurable.local_search_config or {}
 
     # Convert JSON object to string if necessary
     if isinstance(report_structure, dict):
@@ -241,9 +240,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Web search
     query_list = [query.search_query for query in results.queries]
-
-    # Search the web with parameters
-    source_str = await select_and_execute_search(search_api, query_list, search_api_config)
+    source_str = await select_and_execute_search(
+        search_source, query_list, web_config=web_config, local_config=local_config
+    )
     urls = extract_urls_from_search_results(source_str)
 
     # Format system instructions
@@ -411,7 +410,7 @@ def generate_queries(state: SectionState, config: RunnableConfig):
     return {"search_queries": queries.queries}
 
 
-async def search_web(state: SectionState, config: RunnableConfig):
+async def search(state: SectionState, config: RunnableConfig):
     """Execute web searches for the section queries.
 
     This node:
@@ -431,14 +430,15 @@ async def search_web(state: SectionState, config: RunnableConfig):
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    search_api = get_config_value(configurable.search_api)
-    search_api_config = configurable.search_api_config or {}  # Get the config dict, default to empty
+    search_source = get_config_value(configurable.search_source)
+    web_config = configurable.web_search_config or {}
+    local_config = configurable.local_search_config or {}
 
     # Web search
     query_list = [query.search_query for query in search_queries]
-
-    # Search the web with parameters
-    source_str = await select_and_execute_search(search_api, query_list, search_api_config)
+    source_str = await select_and_execute_search(
+        search_source, query_list, web_config=web_config, local_config=local_config
+    )
     urls = extract_urls_from_search_results(source_str)
 
     return {
@@ -448,7 +448,7 @@ async def search_web(state: SectionState, config: RunnableConfig):
     }
 
 
-def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
+def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search"]]:
     """Write a section of the report and evaluate if more research is needed.
 
     This node:
@@ -535,7 +535,7 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
     else:
         return Command(
             update={"search_queries": feedback.follow_up_queries, "section": section, "all_urls": urls},
-            goto="search_web",
+            goto="search",
         )
 
 
@@ -733,8 +733,9 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
 async def deep_research_search(state: SectionState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    search_api = get_config_value(configurable.search_api)
-    search_api_config = configurable.search_api_config or {}
+    search_source = get_config_value(configurable.search_source)
+    web_config = configurable.web_search_config or {}
+    local_config = configurable.local_search_config or {}
     queries_by_subtopic = state["deep_research_queries"]
 
     # Search the web for each subtopic
@@ -742,7 +743,12 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
     for subtopic_name, queries in queries_by_subtopic.items():
         query_list = [query.search_query for query in queries]
 
-        subtopic_source_str = await select_and_execute_search(search_api, query_list, search_api_config)
+        subtopic_source_str = await select_and_execute_search(
+            search_source,
+            query_list,
+            web_config=web_config,
+            local_config=local_config,
+        )
         results_by_subtopic[subtopic_name] = subtopic_source_str
 
     return {"deep_research_results": results_by_subtopic}
@@ -823,7 +829,7 @@ def deep_research_writer(state: SectionState, config: RunnableConfig):
 # Add nodes
 section_builder = StateGraph(SectionState, output=SectionOutputState)
 section_builder.add_node("generate_queries", generate_queries)
-section_builder.add_node("search_web", search_web)
+section_builder.add_node("search", search)
 section_builder.add_node("write_section", write_section)
 
 section_builder.add_node("deep_research_planner", deep_research_planner)
@@ -832,8 +838,8 @@ section_builder.add_node("deep_research_search", deep_research_search)
 section_builder.add_node("deep_research_writer", deep_research_writer)
 
 section_builder.add_edge(START, "generate_queries")
-section_builder.add_edge("generate_queries", "search_web")
-section_builder.add_edge("search_web", "write_section")
+section_builder.add_edge("generate_queries", "search")
+section_builder.add_edge("search", "write_section")
 
 
 def should_deep_research(state: SectionState) -> str:

@@ -11,22 +11,49 @@ def get_config_value(value):
     return value if isinstance(value, str) else value.value
 
 
-async def select_and_execute_search(search_api: str, query_list: list[str], params_to_pass: dict) -> str:
-    if search_api in ["tavily", "perplexity", "exa", "arxiv", "pubmed", "linkup"]:
-        return await web_search(search_api, query_list, params_to_pass)
+async def select_and_execute_search(
+    search_source: str,
+    query_list: list[str],
+    web_config: dict = None,
+    local_config: dict = None,
+) -> str:
+    """適切な検索ソースを選択して実行する
 
-    elif search_api == "local":
-        return await local_search(query_list, **params_to_pass)
+    Args:
+        search_source: 検索ソース（"web", "local", "hybrid"）
+        query_list: 検索クエリのリスト
+        web_config: Webプロバイダーの設定パラメータ
+        local_config: ローカル検索の設定パラメータ
 
-    elif search_api == "hybrid":
+    Returns:
+        検索結果の文字列
+    """
+    # デフォルト値の設定
+    web_config = web_config or {}
+    local_config = local_config or {}
+
+    if search_source == "web":
+        # web_config内からproviderを取得して、残りのパラメータを渡す
+        provider = web_config.pop("provider", "tavily")
+        result = await web_search(provider, query_list, web_config)
+        # web_configを元に戻す（副作用を避けるため）
+        web_config["provider"] = provider
+        return result
+
+    elif search_source == "local":
+        return await local_search(query_list, **local_config)
+
+    elif search_source == "hybrid":
+        # hybrid検索では、web_configからproviderを取得
+        provider = web_config.pop("provider", "tavily")
         return await hybrid_search(
             query_list,
-            web_search_api=params_to_pass["web_search_api"],
-            web_search_params=params_to_pass["web_search_params"],
-            local_search_params=params_to_pass["local_search_params"],
+            web_search_api=provider,
+            web_search_params=web_config,
+            local_search_params=local_config,
         )
     else:
-        raise ValueError(f"サポートされていない検索API: {search_api}")
+        raise ValueError(f"サポートされていない検索ソース: {search_source}")
 
 
 def format_sections(sections: list[Section]) -> str:

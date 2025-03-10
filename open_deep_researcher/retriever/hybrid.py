@@ -12,8 +12,19 @@ async def hybrid_search(
     local_search_params: dict[str, Any],
     **kwargs,
 ) -> str:
+    """ローカル検索とWeb検索を組み合わせたハイブリッド検索を実行
+
+    Args:
+        search_queries: 検索クエリのリスト
+        web_search_api: Webプロバイダー名 (providerキーから取得)
+        web_search_params: Web検索のパラメータ
+        local_search_params: ローカル検索のパラメータ
+
+    Returns:
+        str: 結合された検索結果の文字列
+    """
     # ローカル検索とWeb検索を並行して実行
-    print(local_search_params)
+    print(f"Hybrid search parameters - Local: {local_search_params}")
     local_task = asyncio.create_task(
         local_search(
             search_queries,

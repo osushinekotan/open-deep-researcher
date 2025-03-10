@@ -14,13 +14,8 @@ Main Body Sections:
 """
 
 
-class SearchAPI(Enum):
-    PERPLEXITY = "perplexity"
-    TAVILY = "tavily"
-    EXA = "exa"
-    ARXIV = "arxiv"
-    PUBMED = "pubmed"
-    LINKUP = "linkup"
+class SearchSource(Enum):
+    WEB = "web"
     LOCAL = "local"
     HYBRID = "hybrid"
 
@@ -82,11 +77,20 @@ class Configuration:
         }
     )
 
-    search_api: SearchAPI = SearchAPI.TAVILY  # Default to TAVILY
-    search_api_config: dict[str, Any] | None = field(
+    search_source: SearchSource = SearchSource.WEB
+    web_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
+            "provider": "tavily",  # Default to Tavily
             "max_results": 5,
             "include_raw_content": False,
+        }
+    )
+    local_search_config: dict[str, Any] | None = field(
+        default_factory=lambda: {
+            "vector_store_path": "vector_store",
+            "local_document_path": None,
+            "embedding_provider": "openai",
+            "embedding_model": "text-embedding-3-small",
         }
     )
 
