@@ -796,7 +796,6 @@ def compile_final_report(state: ReportState):
 
     # Add references section
     if all_urls:
-        print(all_urls)
         # deduplicate URLs
         dedup_all_urls = list(dict.fromkeys(all_urls))
         references = "## References\n\n"
