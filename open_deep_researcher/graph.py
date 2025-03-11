@@ -52,6 +52,7 @@ PROVIDER_DESCRIPTIONS = {
     "pubmed": "Medical and biomedical research, best for health topics",
     "exa": "Comprehensive web search with additional context",
     "local": "Search through locally stored documents",
+    "google_patent": "Search through Google Patents database",
 }
 
 
@@ -69,6 +70,8 @@ def get_provider_config(configurable: Configuration, provider_name: str) -> dict
         return configurable.exa_search_config or {}
     elif provider_str == "local":
         return configurable.local_search_config or {}
+    elif provider_str == "google_patent":
+        return configurable.google_patent_search_config or {}
     else:
         # デフォルト設定（空の辞書）を返す
         return {}

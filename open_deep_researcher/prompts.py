@@ -150,6 +150,7 @@ Customize your queries based on the search provider:
 - For "pubmed": Create queries optimized for medical literature, using appropriate medical terminology
 - For "exa": Create detailed web search queries with high specificity
 - For "local": Create queries that would match keywords in locally stored documents
+- For "google_patent": Create queries suitable for Google patent search
 
 The queries should:
 1. Be related to the topic
@@ -312,6 +313,7 @@ deep_research_queries_instructions = """あなたは検索クエリ作成の専�
 - "pubmed": 医学文献に最適化されたクエリ、適切な医学用語を使用
 - "exa": 高い特異性を持つ詳細なWeb検索クエリ
 - "local": ローカルに保存された文書に一致するキーワードを持つクエリ
+- "google_patent": Google特許検索に適したクエリ
 
 各クエリは単独で使用でき、高品質なソース情報を見つけられるものにしてください。
 </Task>
