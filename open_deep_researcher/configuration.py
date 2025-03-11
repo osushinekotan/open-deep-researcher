@@ -49,10 +49,10 @@ class Configuration:
     number_of_queries: int = 2  # Number of search queries to generate per iteration
     max_reflection: int = 2  # Maximum number of reflection + search iterations
 
-    max_section_words: int = 2048  # セクション（main body）の最大単語数
-    max_subsection_words: int = 2048  # サブセクションの最大単語数
-    max_introduction_words: int = 2048  # イントロダクションの最大単語数
-    max_conclusion_words: int = 2048  # 結論の最大単語数
+    max_section_words: int = 10000  # セクション（main body）の最大単語数
+    max_subsection_words: int = 10000  # サブセクションの最大単語数
+    max_introduction_words: int = 10000  # イントロダクションの最大単語数
+    max_conclusion_words: int = 10000  # 結論の最大単語数
 
     enable_deep_research: bool = True
     deep_research_depth: int = 1
@@ -97,7 +97,7 @@ class Configuration:
             # SearchProvider.PUBMED,
             # SearchProvider.EXA,
             # SearchProvider.LOCAL,
-            # SearchProvider.GOOGLE_PATEN
+            SearchProvider.GOOGLE_PATENT,
         ]
     )
     # deep_research 時に利用するプロバイダーのリストを指定
