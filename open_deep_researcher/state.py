@@ -13,7 +13,7 @@ class Section(BaseModel):
     )
     content: str = Field(description="The content of the section.")
     search_options: list[str] = Field(
-        description="List of search providers to use for this section (e.g., tavily, arxiv, pubmed, exa, local).",
+        description="List of search providers to use for this section (e.g., tavily, arxiv, pubmed, exa, local, google_patent).",
     )
 
 
@@ -80,8 +80,8 @@ class SectionState(TypedDict):
 
     deep_research_topics: list  # 深掘りするトピックのリスト
     current_depth: int  # 現在の深掘りの深さ
-    deep_research_queries: list  # 深掘り用の検索クエリ
-    deep_research_results: list  # 深掘り検索の結果
+    deep_research_queries: dict[str, list]  # 深掘り用の検索クエリ
+    deep_research_results: dict[str, list]  # 深掘り検索の結果
 
 
 class SectionOutputState(TypedDict):

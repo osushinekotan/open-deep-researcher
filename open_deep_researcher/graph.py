@@ -828,13 +828,9 @@ def deep_research_planner(state: SectionState, config: RunnableConfig):
         **planner_model_config,
     )
     configurable = Configuration.from_runnable_config(config)
-    available_providers = [provider.value for provider in configurable.available_search_providers]
-    deep_research_providers = (
-        getattr(configurable, "deep_research_providers", None)
-        or [configurable.default_search_provider.value]
-        or section.search_options
-    )
-    deep_research_providers = [provider for provider in deep_research_providers if provider in available_providers]
+    deep_research_providers = [provider.value for provider in configurable.deep_research_providers] or [
+        configurable.default_search_provider.value
+    ]
 
     system_instructions = deep_research_planner_instructions.format(
         topic=topic,
@@ -868,13 +864,9 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
     subtopics = state["deep_research_topics"]
 
     # 検索プロバイダを取得
-    available_providers = [provider.value for provider in configurable.available_search_providers]
-    deep_research_providers = (
-        getattr(configurable, "deep_research_providers", None)
-        or [configurable.default_search_provider.value]
-        or section.search_options
-    )
-    deep_research_providers = [provider for provider in deep_research_providers if provider in available_providers]
+    deep_research_providers = [provider.value for provider in configurable.deep_research_providers] or [
+        configurable.default_search_provider.value
+    ]
 
     # Get writer model
     writer_provider = get_config_value(configurable.writer_provider)
@@ -910,7 +902,6 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
             subtopic_queries.extend(queries.queries)
 
         queries_by_subtopic[subtopic.name] = subtopic_queries
-
     return {"deep_research_queries": queries_by_subtopic}
 
 
@@ -921,17 +912,13 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
 
     # セクションの検索オプションを取得（ここでは深掘り検索用のプロバイダを定義可能）
     # 深掘り検索用に特定のプロバイダを使用するか、セクションの既存オプションを使用
-    section = state["section"]
-    available_providers = [provider.value for provider in configurable.available_search_providers]
-    deep_research_providers = (
-        getattr(configurable, "deep_research_providers", None)
-        or [configurable.default_search_provider.value]
-        or section.search_options
-    )
-    deep_research_providers = [provider for provider in deep_research_providers if provider in available_providers]
+    deep_research_providers = [provider.value for provider in configurable.deep_research_providers] or [
+        configurable.default_search_provider.value
+    ]
 
     # 各サブトピックごとに検索を実行
     results_by_subtopic = {}
+    all_urls = []
     for subtopic_name, queries in queries_by_subtopic.items():
         query_list = [query.search_query for query in queries]
 
@@ -948,6 +935,9 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
                 else:
                     result = await web_search(provider, query_list, provider_config)
 
+                extracted_urls = extract_urls_from_search_results(result)
+                all_urls.extend(extracted_urls)
+
                 subtopic_results.append(f"=== {provider.upper()} SEARCH RESULTS ===\n{result}")
             except Exception as e:
                 print(f"deep research '{provider}' の使用中にエラーが発生しました: {str(e)}")
@@ -956,7 +946,7 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
         # 結果を結合
         results_by_subtopic[subtopic_name] = "\n\n".join(subtopic_results)
 
-    return {"deep_research_results": results_by_subtopic}
+    return {"deep_research_results": results_by_subtopic, "all_urls": all_urls}
 
 
 def deep_research_writer(state: SectionState, config: RunnableConfig):
