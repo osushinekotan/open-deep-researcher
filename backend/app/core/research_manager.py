@@ -6,15 +6,41 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
 from app.config import DOCUMENTS_DIR, VECTOR_STORE_DIR
+from app.db.models import init_db
 from app.models.research import DEFAULT_REPORT_STRUCTURE, PlanResponse, ResearchConfig, ResearchStatus, SectionModel
+from app.services.research_service import get_research_service
 from open_deep_researcher.graph import builder
 
 
 class ResearchManager:
     def __init__(self):
-        self.research_tasks = {}  # research_id -> task_info
+        # データベースの初期化
+        init_db()
+
+        # インメモリストア（グラフ実行時に使用）
+        self.research_tasks = {}
+        # SQLAlchemyを使った永続サービス
+        self.research_service = get_research_service()
+        # langgraphのメモリセーバー
         self.memory = MemorySaver()
         self.graph = builder.compile(checkpointer=self.memory)
+
+        # 起動時に永続ストアからデータをロード
+        self._load_from_persistent_store()
+
+    def _load_from_persistent_store(self):
+        """データベースからリサーチデータをロード"""
+        try:
+            researches = self.research_service.list_researches()
+            for research in researches:
+                # 完了したものや、エラーのあるものはメモリに復元
+                # 継続中のものについては必要になったときに個別にロード
+                if research["status"] in ["completed", "error"]:
+                    full_research = self.research_service.get_research(research["id"])
+                    if full_research:
+                        self.research_tasks[research["id"]] = full_research
+        except Exception as e:
+            print(f"永続ストアからのロード中にエラーが発生しました: {e}")
 
     async def execute_research(self, research_id: str, topic: str, config: ResearchConfig | None = None):
         """リサーチを実行する"""
@@ -33,7 +59,11 @@ class ResearchManager:
                 "waiting_for_feedback": False,
                 "thread": None,
                 "progress": 0.0,
+                "all_urls": [],
             }
+
+            # データベースに保存
+            self.research_service.save_research(self.research_tasks[research_id])
 
             # 設定からConfigurableを作成
             configurable = self._create_configurable(config, research_id)
@@ -44,29 +74,43 @@ class ResearchManager:
             self.research_tasks[research_id]["thread"] = thread
             self.research_tasks[research_id]["status"] = "planning"
 
+            # ステータス更新をデータベースに保存
+            self.research_service.save_research(self.research_tasks[research_id])
+
             # リサーチの実行
             async for event in self.graph.astream({"topic": topic}, thread, stream_mode="updates"):
                 print(f"Event for {research_id}: {event.keys()}")
                 await self._process_event(research_id, event)
 
+                # リサーチ情報の変更をデータベースに保存
+                self.research_service.save_research(self.research_tasks[research_id])
+
                 # ヒューマンフィードバックが必要な場合は一時停止
                 skip_human_feedback = configurable.get("skip_human_feedback", False)
                 if not skip_human_feedback and self.research_tasks[research_id].get("waiting_for_feedback", False):
                     self.research_tasks[research_id]["status"] = "waiting_for_feedback"
+                    self.research_service.save_research(self.research_tasks[research_id])
                     break
 
         except Exception as e:
             # エラー情報を保存
             self.research_tasks[research_id]["status"] = "error"
             self.research_tasks[research_id]["error"] = str(e)
+            # データベースに保存
+            self.research_service.save_research(self.research_tasks[research_id])
             import traceback
 
             print(f"Error executing research: {traceback.format_exc()}")
 
     async def submit_feedback(self, research_id: str, feedback: str | None) -> bool:
         """リサーチプランに対するフィードバックを送信"""
+        # データベースからリサーチ情報をロード（まだメモリにない場合）
         if research_id not in self.research_tasks:
-            return False
+            research_data = self.research_service.get_research(research_id)
+            if research_data:
+                self.research_tasks[research_id] = research_data
+            else:
+                return False
 
         task = self.research_tasks[research_id]
         if task["status"] != "waiting_for_feedback" or not task.get("waiting_for_feedback"):
@@ -75,6 +119,9 @@ class ResearchManager:
         # フィードバック待ち状態を解除
         task["waiting_for_feedback"] = False
         task["status"] = "processing_feedback"
+
+        # 状態変更をデータベースに保存
+        self.research_service.save_research(task)
 
         # 非同期でリサーチを続行
         asyncio.create_task(self._continue_research(research_id, feedback))
@@ -88,6 +135,8 @@ class ResearchManager:
 
         try:
             task["status"] = "executing"
+            # 状態変更をデータベースに保存
+            self.research_service.save_research(task)
 
             # フィードバックに基づいてリサーチを続行
             if feedback is None or feedback.strip() == "":
@@ -102,10 +151,15 @@ class ResearchManager:
                 print(f"Continue event for {research_id}: {event.keys()}")
                 await self._process_event(research_id, event)
 
+                # 変更をデータベースに保存
+                self.research_service.save_research(task)
+
         except Exception as e:
             # エラー情報を保存
             task["status"] = "error"
             task["error"] = str(e)
+            # データベースに保存
+            self.research_service.save_research(task)
             import traceback
 
             print(f"Error continuing research: {traceback.format_exc()}")
@@ -122,7 +176,13 @@ class ResearchManager:
                 # セクションリストを更新
                 sections = event["generate_report_plan"]["sections"]
                 task["sections"] = [
-                    {"name": s.name, "description": s.description, "content": s.content or ""} for s in sections
+                    {
+                        "name": s.name,
+                        "description": s.description,
+                        "content": s.content or "",
+                        "search_options": s.search_options,
+                    }
+                    for s in sections
                 ]
 
                 # skip_human_feedback が False の場合のみフィードバック待ち状態に設定
@@ -140,6 +200,10 @@ class ResearchManager:
 
         elif "generate_introduction" in event:
             task["status"] = "writing_introduction"
+            if "introduction" in event["generate_introduction"]:
+                task["introduction"] = event["generate_introduction"]["introduction"]
+            if "all_urls" in event["generate_introduction"]:
+                task["all_urls"] = event["generate_introduction"]["all_urls"]
 
         elif "human_feedback" in event:
             task["status"] = "processing_sections"
@@ -154,16 +218,29 @@ class ResearchManager:
                     if section_name not in task["completed_sections"]:
                         task["completed_sections"].append(section_name)
 
+                    # セクションの内容を更新
+                    for i, s in enumerate(task["sections"]):
+                        if s["name"] == section_name:
+                            task["sections"][i]["content"] = section.content
+
                 # 進捗率を更新
                 total_sections = len(task["sections"]) if task["sections"] else 1
                 completed = len(task["completed_sections"])
                 task["progress"] = min(0.9, completed / total_sections) if total_sections > 0 else 0
+
+            if "all_urls" in event["build_section_with_research"]:
+                # URLを追加（重複は追って対処する）
+                task["all_urls"] = task.get("all_urls", []) + event["build_section_with_research"]["all_urls"]
+                # 重複を削除
+                task["all_urls"] = list(set(task["all_urls"]))
 
         elif "gather_completed_sections" in event:
             task["status"] = "collecting_sections"
 
         elif "generate_conclusion" in event:
             task["status"] = "generating_conclusion"
+            if "conclusion" in event["generate_conclusion"]:
+                task["conclusion"] = event["generate_conclusion"]["conclusion"]
 
         elif "compile_final_report" in event:
             if "final_report" in event["compile_final_report"]:
@@ -174,6 +251,9 @@ class ResearchManager:
                 print(f"Research {research_id} completed!")
             else:
                 task["status"] = "compiling_report"
+
+        elif "setup_patent_db" in event:
+            task["status"] = "initializing_patent_db"
 
         # デバッグ用：不明なイベントタイプがあれば内容を詳細に検査
         else:
@@ -221,8 +301,6 @@ class ResearchManager:
             "arxiv_search_config": {
                 "load_max_docs": 5,
                 "get_full_documents": True,
-                "load_all_available_meta": True,
-                "add_aditional_metadata": True,
             },
             "local_search_config": {
                 "vector_store_path": str(VECTOR_STORE_DIR),
@@ -230,13 +308,8 @@ class ResearchManager:
                 "embedding_provider": "openai",
                 "embedding_model": "text-embedding-3-small",
             },
-            "google_patent_search_config": {
-                "db_path": "data/patent_database.sqlite",
-                "limit": 10,
-                "query_expansion": True,
-            },
+            # 言語設定
             "language": "japanese",
-            "max_tokens_per_source": 8192,
         }
 
         # ユーザー設定で上書き
@@ -258,8 +331,13 @@ class ResearchManager:
 
     async def get_research_status(self, research_id: str) -> ResearchStatus | None:
         """リサーチの現在のステータスを取得"""
+        # データベースからリサーチ情報をロード（まだメモリにない場合）
         if research_id not in self.research_tasks:
-            return None
+            research_data = self.research_service.get_research(research_id)
+            if research_data:
+                self.research_tasks[research_id] = research_data
+            else:
+                return None
 
         task = self.research_tasks[research_id]
 
@@ -284,8 +362,13 @@ class ResearchManager:
 
     async def get_research_plan(self, research_id: str) -> PlanResponse | None:
         """リサーチプランを取得（フィードバック用）"""
+        # データベースからリサーチ情報をロード（まだメモリにない場合）
         if research_id not in self.research_tasks:
-            return None
+            research_data = self.research_service.get_research(research_id)
+            if research_data:
+                self.research_tasks[research_id] = research_data
+            else:
+                return None
 
         task = self.research_tasks[research_id]
 
@@ -303,8 +386,13 @@ class ResearchManager:
 
     async def get_research_result(self, research_id: str) -> dict[str, Any] | None:
         """完了したリサーチの結果を取得"""
+        # データベースからリサーチ情報をロード（まだメモリにない場合）
         if research_id not in self.research_tasks:
-            return None
+            research_data = self.research_service.get_research(research_id)
+            if research_data:
+                self.research_tasks[research_id] = research_data
+            else:
+                return None
 
         task = self.research_tasks[research_id]
         if task["status"] != "completed" or not task.get("final_report"):
@@ -319,11 +407,25 @@ class ResearchManager:
 
     async def list_researches(self) -> list[ResearchStatus]:
         """すべてのリサーチのリストを取得"""
+        # データベースから全てのリサーチ情報を取得
+        researches = self.research_service.list_researches()
+
+        # ResearchStatusオブジェクトのリストに変換
         result = []
-        for research_id, task in self.research_tasks.items():  # noqa
-            status = await self.get_research_status(research_id)
-            if status:
-                result.append(status)
+        for research in researches:
+            sections = []
+            status = ResearchStatus(
+                research_id=research["id"],
+                status=research["status"],
+                topic=research["topic"],
+                sections=sections,
+                progress=research.get("progress", 0.0),
+                completed_sections=[],  # 簡易リストでは空のリストを返す
+                final_report=None,
+                error=research.get("error"),
+            )
+            result.append(status)
+
         return result
 
 
