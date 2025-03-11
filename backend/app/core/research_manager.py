@@ -221,6 +221,8 @@ class ResearchManager:
             "arxiv_search_config": {
                 "load_max_docs": 5,
                 "get_full_documents": True,
+                "load_all_available_meta": True,
+                "add_aditional_metadata": True,
             },
             "local_search_config": {
                 "vector_store_path": str(VECTOR_STORE_DIR),
@@ -228,8 +230,13 @@ class ResearchManager:
                 "embedding_provider": "openai",
                 "embedding_model": "text-embedding-3-small",
             },
-            # 言語設定
+            "google_patent_search_config": {
+                "db_path": "data/patent_database.sqlite",
+                "limit": 10,
+                "query_expansion": True,
+            },
             "language": "japanese",
+            "max_tokens_per_source": 8192,
         }
 
         # ユーザー設定で上書き

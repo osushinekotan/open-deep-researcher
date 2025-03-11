@@ -4,4 +4,5 @@ sqlalchemy
 pydantic
 python-multipart
 aiofiles
+google-cloud-bigquery
 -e ..

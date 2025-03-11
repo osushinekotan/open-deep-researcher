@@ -29,6 +29,7 @@ class SearchProviderEnum(str, Enum):
     PUBMED = "pubmed"
     EXA = "exa"
     LOCAL = "local"
+    GOOGLE_PATENT = "google_patent"
 
 
 class ResearchConfig(BaseModel):
@@ -71,10 +72,14 @@ class ResearchConfig(BaseModel):
     deep_research_providers: list[SearchProviderEnum] = [SearchProviderEnum.TAVILY]
     default_search_provider: SearchProviderEnum = SearchProviderEnum.TAVILY
 
+    # トークン数制限
+    max_tokens_per_source: int = 8192
+
     # 検索プロバイダー別の設定
     tavily_search_config: dict[str, Any] | None = None
     arxiv_search_config: dict[str, Any] | None = None
     local_search_config: dict[str, Any] | None = None
+    google_patent_search_config: dict[str, Any] | None = None
 
     # 言語設定
     language: str = "japanese"
