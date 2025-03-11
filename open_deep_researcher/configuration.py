@@ -132,6 +132,7 @@ class Configuration:
         default_factory=lambda: {
             "db_path": "data/patent_database.sqlite",
             "limit": 10,
+            "query_expansion": True,
         }
     )
 

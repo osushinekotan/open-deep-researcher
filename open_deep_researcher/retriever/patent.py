@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langsmith import traceable
 from pydantic import BaseModel, Field
 
-from open_deep_researcher.utils import deduplicate_and_format_sources
+from open_deep_researcher.utils import deduplicate_and_format_sources, expand_query
 
 
 class SQLiteFTSPatentetriever:
@@ -384,6 +384,7 @@ async def patent_search(
     db_path: str = "patent_database.sqlite",
     limit: int = 10,
     max_tokens_per_source: int = 8192,
+    query_expansion: bool = False,
     **kwargs,
 ) -> str:
     """特許検索を実行
@@ -397,10 +398,21 @@ async def patent_search(
         検索結果の文字列
     """
     search_docs = []
+    full_search_queries = []
+
+    # query_expansion: 翻訳や同義語を使ったクエリ拡張 (検索対象が local db であるため、検索回数増加を許容)
+    if query_expansion:
+        for _query in search_queries:
+            expanded_queries = await expand_query(_query)
+            full_search_queries.extend(expanded_queries.expanded_queries)
+    else:
+        full_search_queries = search_queries
+    print("search_queries:", full_search_queries)
+
     try:
         retriever = SQLiteFTSPatentetriever(db_path)
 
-        for query in search_queries:
+        for query in full_search_queries:
             results = retriever.search(query, limit=limit)
 
             formatted_results = []

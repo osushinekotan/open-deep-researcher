@@ -1,5 +1,9 @@
 import hashlib
 
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage, SystemMessage
+from pydantic import BaseModel, Field
+
 from open_deep_researcher.state import Section
 
 
@@ -178,3 +182,76 @@ def generate_detail_heading(level, count, section_name):
         return "#" * level + f" {section_name}: 詳細分析"
     else:
         return "#" * level + f" {section_name}: 詳細分析{count + 1}"
+
+
+class ExpandedQuerySet(BaseModel):
+    """拡張された検索クエリセット"""
+
+    expanded_queries: list[str] = Field(..., title="拡張された検索クエリのリスト。元のクエリも含む")
+
+
+async def expand_query(
+    query: str,
+    max_queries_per_language: int = 2,
+    llm_provider: str = "openai",
+    llm_model: str = "gpt-4o",
+    llm_model_config: dict | None = None,
+) -> ExpandedQuerySet:
+    llm_model_config = llm_model_config or {}
+    llm = init_chat_model(model=llm_model, model_provider=llm_provider, **llm_model_config)
+    structured_llm = llm.with_structured_output(ExpandedQuerySet)
+
+    system_prompt = """
+    あなたは多言語検索クエリ生成の専門家です。与えられたトピックに基づいて、効果的な検索クエリを生成してください。
+
+    <task>
+    1. ユーザーが入力したクエリの同義キーワードを生成します
+        - 入力クエリが文章の場合は、メインキーワードを抽出します
+        - 入力クエリが複数のキーワードの場合は、全てのキーワードを考慮してください
+    2. ユーザーが入力したクエリと同義キーワードを多言語に翻訳します
+    3. 入力言語が英語の場合は、日本語に翻訳します
+    4. 入力言語が英語以外の場合は、英語に翻訳します
+    5. 元のクエリは出力するキーワードリストに必ず含めるようにしてください
+    </task>
+
+    言語ごとに**最大 {max_queries_per_language} 件**のクエリを生成してください。
+
+    <example>
+    input: "機械学習とはなんですか?"
+    output: ["機械学習", "machine learning"]
+
+    input: "画像認識 機械学習モデル"
+    output: [
+        "画像認識 機械学習モデル",
+        "画像認識 ニューラルネット",
+        "image recognition machine learning model",
+        "image recognition neural network"
+    ]
+
+    input: "光格子時計 展望"
+    output: [
+        "光格子時計 展望",
+        "光格子時計 未来",
+        "optical lattice clock outlook",
+        "optical lattice clock future"
+    ]
+    </example>
+    """
+
+    try:
+        response = structured_llm.invoke(
+            [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=f"以下のクエリを拡張してください: {query}"),
+            ]
+        )
+
+        response.expanded_queries = [q.strip() for q in response.expanded_queries if q.strip()]
+        if not response.expanded_queries:
+            response.expanded_queries = [query]
+
+        return response
+
+    except Exception as e:
+        print(f"クエリ生成エラー: {e}")
+        return ExpandedQuerySet(expanded_queries=[query])
