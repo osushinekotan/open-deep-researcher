@@ -24,6 +24,7 @@ from open_deep_researcher.prompts import (
     section_writer_instructions,
 )
 from open_deep_researcher.retriever.local import local_search, process_documents
+from open_deep_researcher.retriever.patent import initialize_patent_database, patent_search
 from open_deep_researcher.retriever.web import web_search
 from open_deep_researcher.state import (
     Feedback,
@@ -74,6 +75,51 @@ def get_provider_config(configurable: Configuration, provider_name: str) -> dict
 
 
 ## Nodes --
+
+
+async def setup_patent_db(state: ReportState, config: RunnableConfig):
+    """ユーザーのトピックに基づいて特許データベースを初期化するノード
+
+    このノードは以下を行います：
+    1. available_search_providers に google_patent が含まれているか確認
+    2. 含まれている場合、LLMを使ってトピックから検索キーワードを生成
+    3. 生成したキーワードでBigQueryを検索
+    4. 検索結果をSQLiteデータベースに保存
+
+    Args:
+        state: 現在のグラフ状態
+        config: 実行設定
+
+    Returns:
+        初期化結果の辞書
+    """
+    # Get configuration
+    configurable = Configuration.from_runnable_config(config)
+    available_providers = [provider.value for provider in configurable.available_search_providers]
+
+    # Skip if Google Patent is not available
+    if "google_patent" not in available_providers:
+        return {"patent_db_ready": False}
+
+    topic = state["topic"]
+
+    # 特許データベースの設定を取得
+    patent_config = configurable.google_patent_search_config or {}
+    db_path = patent_config.get("db_path", "patent_database.sqlite")
+
+    # LLMの設定
+    planner_provider = get_config_value(configurable.planner_provider)
+    planner_model = get_config_value(configurable.planner_model)
+    planner_model_config = configurable.planner_model_config or {}
+    success = await initialize_patent_database(
+        topic=topic,
+        db_path=db_path,
+        llm_provider=planner_provider,
+        llm_model=planner_model,
+        llm_model_config=planner_model_config,
+    )
+
+    return {"patent_db_ready": success}
 
 
 async def setup_local_documents(state: ReportState, config: RunnableConfig):
@@ -487,7 +533,6 @@ async def search(state: SectionState, config: RunnableConfig):
             query_list = [query.search_query for query in queries]
 
             # プロバイダごとの設定を取得
-
             if provider == "tavily":
                 search_result = await web_search(
                     "tavily", query_list, params_to_pass=get_provider_config(configurable, provider)
@@ -506,6 +551,8 @@ async def search(state: SectionState, config: RunnableConfig):
                 )
             elif provider == "local":
                 search_result = await local_search(query_list, **get_provider_config(configurable, provider))
+            elif provider == "google_patent":
+                search_result = await patent_search(query_list, **get_provider_config(configurable, provider))
             else:
                 continue
 
@@ -1004,6 +1051,7 @@ builder = StateGraph(
     output=ReportStateOutput,
     config_schema=Configuration,
 )
+builder.add_node("setup_patent_db", setup_patent_db)
 builder.add_node("setup_local_documents", setup_local_documents)
 builder.add_node("determine_if_question", determine_if_question)
 builder.add_node("generate_introduction", generate_introduction)
@@ -1017,7 +1065,8 @@ builder.add_node("generate_conclusion", generate_conclusion)
 
 # Add edges
 builder.add_edge(START, "setup_local_documents")
-builder.add_edge("setup_local_documents", "determine_if_question")
+builder.add_edge("setup_local_documents", "setup_patent_db")
+builder.add_edge("setup_patent_db", "determine_if_question")
 builder.add_edge("determine_if_question", "generate_introduction")
 builder.add_edge("generate_introduction", "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")

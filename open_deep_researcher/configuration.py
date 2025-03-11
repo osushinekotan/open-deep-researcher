@@ -38,6 +38,7 @@ class SearchProvider(Enum):
     PUBMED = "pubmed"
     EXA = "exa"
     LOCAL = "local"
+    GOOGLE_PATENT = "google_patent"
 
 
 @dataclass(kw_only=True)
@@ -95,6 +96,7 @@ class Configuration:
             # SearchProvider.PUBMED,
             # SearchProvider.EXA,
             # SearchProvider.LOCAL,
+            # SearchProvider.GOOGLE_PATEN
         ]
     )
     # deep_research 時に利用するプロバイダーのリストを指定
@@ -121,6 +123,12 @@ class Configuration:
             "local_document_path": None,
             "embedding_provider": "openai",
             "embedding_model": "text-embedding-3-small",
+        }
+    )
+    google_patent_search_config: dict[str, Any] | None = field(
+        default_factory=lambda: {
+            "db_path": "patent_database.sqlite",
+            "limit": 10,
         }
     )
 
