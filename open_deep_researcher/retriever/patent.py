@@ -208,22 +208,47 @@ async def generate_patent_search_keywords(
     4. 原言語（ユーザーが入力した言語）のキーワード組み合わせリストと、それらを英語に翻訳したリストの両方を生成してください
     5. キーワードは具体的かつ技術的である必要があります
     6. 結果が多すぎる一般的な用語は避けてください
-    7. topic が単なる技術ワード (ex: 自動運転) の場合は、トピックそのものと英訳のみを返してください
+    7. topic が単なる技術ワード (ex: 自動運転) の場合は、トピックそのものと英訳のみを返してください。ただし同義語は追加してください
 
-    例:
-        トピック「自動運転車の障害物検知」
-        keywords_list: [
-            ["自動運転", "障害物検知"],
-            ["自律走行", "センサー", "障害物"],
-            ["自動運転車", "ライダー"],
-            ["自動車", "障害物回避", "AI"], ...
-        ]
-        translated_keywords_list: [
-            ["autonomous driving", "obstacle detection"],
-            ["autonomous vehicle", "sensor", "obstacle"],
-            ["self-driving car", "LIDAR"],
-            ["automobile", "obstacle avoidance", "AI"], ...
-        ]
+    <example>
+    topic:「自動運転車の障害物検知」
+    keywords_list: [
+        ["自動運転", "障害物検知"],
+        ["自律走行", "センサー", "障害物"],
+        ["自動運転車", "ライダー"],
+        ["自動車", "障害物回避", "AI"], ...
+    ]
+    translated_keywords_list: [
+        ["autonomous driving", "obstacle detection"],
+        ["autonomous vehicle", "sensor", "obstacle"],
+        ["self-driving car", "LIDAR"],
+        ["automobile", "obstacle avoidance", "AI"], ...
+    ]
+
+    topic:「自動運転」
+    keywords_list: [
+        ["自動運転"],
+        ["自動運転技術"],
+        ["自動運転車"],
+        ["自動運転システム"], ...
+    ]
+    translated_keywords_list: [
+        ["autonomous driving"],
+        ["autonomous driving technology"],
+        ["autonomous vehicle"],
+        ["autonomous driving system"], ...
+    ]
+
+    topic: 「光格子時計」
+    keywords_list: [
+        ["光格子時計"],
+        ["原始時計"],...
+    ]
+    translated_keywords_list: [
+        ["optical lattice clock"],
+        ["atomic clock"],...
+    ]
+    </example>
 
     最終的なデータベース検索では、例えば ["自動運転", "障害物検知"] は "(LOWER(title) LIKE LOWER('%自動運転%') AND LOWER(title) LIKE LOWER('%障害物検知%'))"
     という条件に変換されます。
@@ -311,7 +336,6 @@ async def search_google_patents(keywords_list: list[list[str]], limit: int = 100
     ORDER BY publication_date DESC
     LIMIT {limit}
     """
-
     try:
         query_job = client.query(query)
         rows = query_job.result()

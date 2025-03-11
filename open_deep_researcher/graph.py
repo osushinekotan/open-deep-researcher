@@ -210,6 +210,8 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
 
     if introduction_provider == "local":
         source_str = await local_search(query_list, **provider_config)
+    elif introduction_provider == "google_patent":
+        source_str = await patent_search(query_list, **provider_config)
     else:
         source_str = await web_search(introduction_provider, query_list, provider_config)
 
@@ -310,6 +312,8 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     if planning_provider == "local":
         source_str = await local_search(query_list, **provider_config)
+    elif planning_provider == "google_patent":
+        source_str = await patent_search(query_list, **provider_config)
     else:
         source_str = await web_search(planning_provider, query_list, provider_config)
 
@@ -529,73 +533,71 @@ async def search(state: SectionState, config: RunnableConfig):
     all_urls = []
 
     for provider in search_options:
+        provider_str = provider.lower() if isinstance(provider, str) else provider.value
         try:
-            queries = search_queries_by_provider.get(provider, [])
+            queries = search_queries_by_provider.get(provider_str, [])
             if not queries:
                 continue
 
             query_list = [query.search_query for query in queries]
 
             # プロバイダごとの設定を取得
-            if provider == "tavily":
+            if provider_str == "tavily":
                 search_result = await web_search(
                     "tavily",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
+                    params_to_pass=get_provider_config(configurable, provider_str),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider == "arxiv":
+            elif provider_str == "arxiv":
                 search_result = await web_search(
                     "arxiv",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
+                    params_to_pass=get_provider_config(configurable, provider_str),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider == "pubmed":
+            elif provider_str == "pubmed":
                 search_result = await web_search(
                     "pubmed",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
+                    params_to_pass=get_provider_config(configurable, provider_str),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider == "exa":
+            elif provider_str == "exa":
                 search_result = await web_search(
                     "exa",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
+                    params_to_pass=get_provider_config(configurable, provider_str),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider == "local":
+            elif provider_str == "local":
                 search_result = await local_search(
                     query_list,
                     max_tokens_per_source=max_tokens_per_source,
-                    **get_provider_config(configurable, provider),
+                    **get_provider_config(configurable, provider_str),
                 )
-            elif provider == "google_patent":
+            elif provider_str == "google_patent":
                 search_result = await patent_search(
                     query_list,
                     max_tokens_per_source=max_tokens_per_source,
-                    **get_provider_config(configurable, provider),
+                    **get_provider_config(configurable, provider_str),
                 )
             else:
                 continue
 
-            search_results_by_provider[provider] = search_result
+            search_results_by_provider[provider_str] = search_result
 
             # URLを収集
             provider_urls = extract_urls_from_search_results(search_result)
             all_urls.extend(provider_urls)
 
         except Exception as e:
-            print(f"プロバイダ '{provider}' の検索中にエラーが発生しました: {str(e)}")
+            print(f"プロバイダ '{provider_str}' の検索中にエラーが発生しました: {str(e)}")
             search_results_by_provider[provider] = f"エラー: {str(e)}"
 
     # 全プロバイダの結果を結合
     combined_results = "\n\n".join(
-        [
-            f"=== {provider.upper()} SEARCH RESULTS ===\n{result}"
-            for provider, result in search_results_by_provider.items()
-        ]
+        [f"=== {provider_str} SEARCH RESULTS ===\n{result}" for provider, result in search_results_by_provider.items()]
     )
 
     return {
@@ -627,7 +629,7 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
     topic = state["topic"]
     section = state["section"]
     source_str = state["source_str"]
-    urls = extract_urls_from_search_results(source_str)
+    all_urls = state["all_urls"]
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
@@ -689,10 +691,10 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
     # If the section is passing or the max search depth is reached
     if feedback.grade == "pass" or state["search_iterations"] >= configurable.max_reflection:
         # Publish the section and URLs
-        return Command(update={"completed_sections": [section], "all_urls": urls}, goto=END)
+        return Command(update={"completed_sections": [section], "all_urls": all_urls}, goto=END)
     else:
         return Command(
-            update={"search_queries": feedback.follow_up_queries, "section": section, "all_urls": urls},
+            update={"search_queries": feedback.follow_up_queries, "section": section, "all_urls": all_urls},
             goto="search",
         )
 
@@ -794,6 +796,7 @@ def compile_final_report(state: ReportState):
 
     # Add references section
     if all_urls:
+        print(all_urls)
         # deduplicate URLs
         dedup_all_urls = list(dict.fromkeys(all_urls))
         references = "## References\n\n"
@@ -828,9 +831,7 @@ def deep_research_planner(state: SectionState, config: RunnableConfig):
         **planner_model_config,
     )
     configurable = Configuration.from_runnable_config(config)
-    deep_research_providers = [provider.value for provider in configurable.deep_research_providers] or [
-        configurable.default_search_provider.value
-    ]
+    deep_research_providers = configurable.deep_research_providers
 
     system_instructions = deep_research_planner_instructions.format(
         topic=topic,
@@ -838,7 +839,9 @@ def deep_research_planner(state: SectionState, config: RunnableConfig):
         section_content=section.content,
         current_depth=current_depth,
         breadth=breadth,
-        search_providers=", ".join(deep_research_providers),
+        search_providers=", ".join(
+            [provider.value if hasattr(provider, "value") else str(provider) for provider in deep_research_providers]
+        ),
     )
     system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -864,9 +867,7 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
     subtopics = state["deep_research_topics"]
 
     # 検索プロバイダを取得
-    deep_research_providers = [provider.value for provider in configurable.deep_research_providers] or [
-        configurable.default_search_provider.value
-    ]
+    deep_research_providers = configurable.deep_research_providers
 
     # Get writer model
     writer_provider = get_config_value(configurable.writer_provider)
@@ -912,9 +913,7 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
 
     # セクションの検索オプションを取得（ここでは深掘り検索用のプロバイダを定義可能）
     # 深掘り検索用に特定のプロバイダを使用するか、セクションの既存オプションを使用
-    deep_research_providers = [provider.value for provider in configurable.deep_research_providers] or [
-        configurable.default_search_provider.value
-    ]
+    deep_research_providers = configurable.deep_research_providers
 
     # 各サブトピックごとに検索を実行
     results_by_subtopic = {}
@@ -927,21 +926,22 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
         for provider in deep_research_providers:
             try:
                 # プロバイダごとの設定を取得
-                provider_config = get_provider_config(configurable, provider)
+                provider_str = provider.value if hasattr(provider, "value") else str(provider)
+                provider_config = get_provider_config(configurable, provider_name=provider_str)
 
                 # 適切な検索関数を呼び出す
-                if provider == "local":
+                if provider_str == "local":
                     result = await local_search(query_list, **provider_config)
+                elif provider_str == "google_patent":
+                    result = await patent_search(query_list, **provider_config)
                 else:
-                    result = await web_search(provider, query_list, provider_config)
+                    result = await web_search(provider_str, query_list, provider_config)
 
                 extracted_urls = extract_urls_from_search_results(result)
                 all_urls.extend(extracted_urls)
-
-                subtopic_results.append(f"=== {provider.upper()} SEARCH RESULTS ===\n{result}")
+                subtopic_results.append(result)
             except Exception as e:
-                print(f"deep research '{provider}' の使用中にエラーが発生しました: {str(e)}")
-                subtopic_results.append(f"=== {provider.upper()} SEARCH ERROR ===\n{str(e)}")
+                print(f"deep research '{provider_str}' の使用中にエラーが発生しました: {str(e)}")
 
         # 結果を結合
         results_by_subtopic[subtopic_name] = "\n\n".join(subtopic_results)
@@ -957,11 +957,7 @@ def deep_research_writer(state: SectionState, config: RunnableConfig):
     section = state["section"]
     current_depth = state["current_depth"]
     results_by_subtopic = state["deep_research_results"]
-
-    # Extract URLs from deep research results
-    urls = []
-    for _, search_results in results_by_subtopic.items():
-        urls.extend(extract_urls_from_search_results(search_results))
+    all_urls = state["all_urls"] or []
 
     writer_provider = get_config_value(configurable.writer_provider)
     writer_model_name = get_config_value(configurable.writer_model)
@@ -1009,12 +1005,10 @@ def deep_research_writer(state: SectionState, config: RunnableConfig):
     updated_section.content = updated_content
 
     if current_depth >= max_depth:
-        return Command(
-            update={"section": updated_section, "completed_sections": [updated_section], "all_urls": urls}, goto=END
-        )
+        return Command(update={"completed_sections": [updated_section], "all_urls": all_urls}, goto=END)
     else:
         return Command(
-            update={"section": updated_section, "current_depth": current_depth, "all_urls": urls},
+            update={"section": updated_section, "current_depth": current_depth, "all_urls": all_urls},
             goto="deep_research_planner",
         )
 

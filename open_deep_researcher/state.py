@@ -83,9 +83,12 @@ class SectionState(TypedDict):
     deep_research_queries: dict[str, list]  # 深掘り用の検索クエリ
     deep_research_results: dict[str, list]  # 深掘り検索の結果
 
+    all_urls: Annotated[list[str], operator.add]  # List of all URLs referenced:
+
 
 class SectionOutputState(TypedDict):
     completed_sections: list[Section]  # Final key we duplicate in outer state for Send() API
+    all_urls: Annotated[list[str], operator.add]  # List of all URLs referenced
 
 
 class SubTopic(BaseModel):
