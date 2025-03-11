@@ -34,7 +34,7 @@ async def start_research(
     )
 
 
-@router.get("/status/{research_id}", response_model=ResearchStatus)
+@router.get("/{research_id}/status", response_model=ResearchStatus)
 async def get_research_status(
     research_id: str,
     research_manager: ResearchManager = Depends(get_research_manager),  # noqa
@@ -46,7 +46,7 @@ async def get_research_status(
     return status
 
 
-@router.get("/plan/{research_id}", response_model=PlanResponse)
+@router.get("/{research_id}/plan", response_model=PlanResponse)
 async def get_research_plan(
     research_id: str,
     research_manager: ResearchManager = Depends(get_research_manager),  # noqa
@@ -58,7 +58,7 @@ async def get_research_plan(
     return plan
 
 
-@router.get("/result/{research_id}")
+@router.get("/{research_id}/result")
 async def get_research_result(
     research_id: str,
     research_manager: ResearchManager = Depends(get_research_manager),  # noqa
