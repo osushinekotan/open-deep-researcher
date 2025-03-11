@@ -341,6 +341,7 @@ async def local_search(
     embedding_model: str = "text-embedding-3-small",
     top_k: int = 5,
     collection_name: str | None = None,
+    max_tokens_per_source: int = 8192,
     **kwargs,
 ) -> str:
     """ベクトル類似性を使用してローカルドキュメントを検索
@@ -391,4 +392,4 @@ async def local_search(
                 }
             )
 
-    return deduplicate_and_format_sources(search_docs, max_tokens_per_source=8000)
+    return deduplicate_and_format_sources(search_docs, max_tokens_per_source=max_tokens_per_source)

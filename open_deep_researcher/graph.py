@@ -522,6 +522,7 @@ async def search(state: SectionState, config: RunnableConfig):
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
+    max_tokens_per_source = configurable.max_tokens_per_source
 
     # 各プロバイダごとに検索実行
     search_results_by_provider = {}
@@ -538,24 +539,44 @@ async def search(state: SectionState, config: RunnableConfig):
             # プロバイダごとの設定を取得
             if provider == "tavily":
                 search_result = await web_search(
-                    "tavily", query_list, params_to_pass=get_provider_config(configurable, provider)
+                    "tavily",
+                    query_list,
+                    params_to_pass=get_provider_config(configurable, provider),
+                    max_tokens_per_source=max_tokens_per_source,
                 )
             elif provider == "arxiv":
                 search_result = await web_search(
-                    "arxiv", query_list, params_to_pass=get_provider_config(configurable, provider)
+                    "arxiv",
+                    query_list,
+                    params_to_pass=get_provider_config(configurable, provider),
+                    max_tokens_per_source=max_tokens_per_source,
                 )
             elif provider == "pubmed":
                 search_result = await web_search(
-                    "pubmed", query_list, params_to_pass=get_provider_config(configurable, provider)
+                    "pubmed",
+                    query_list,
+                    params_to_pass=get_provider_config(configurable, provider),
+                    max_tokens_per_source=max_tokens_per_source,
                 )
             elif provider == "exa":
                 search_result = await web_search(
-                    "exa", query_list, params_to_pass=get_provider_config(configurable, provider)
+                    "exa",
+                    query_list,
+                    params_to_pass=get_provider_config(configurable, provider),
+                    max_tokens_per_source=max_tokens_per_source,
                 )
             elif provider == "local":
-                search_result = await local_search(query_list, **get_provider_config(configurable, provider))
+                search_result = await local_search(
+                    query_list,
+                    max_tokens_per_source=max_tokens_per_source,
+                    **get_provider_config(configurable, provider),
+                )
             elif provider == "google_patent":
-                search_result = await patent_search(query_list, **get_provider_config(configurable, provider))
+                search_result = await patent_search(
+                    query_list,
+                    max_tokens_per_source=max_tokens_per_source,
+                    **get_provider_config(configurable, provider),
+                )
             else:
                 continue
 

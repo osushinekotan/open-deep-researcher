@@ -86,6 +86,7 @@ class Configuration:
         }
     )
 
+    max_tokens_per_source = 8192  # 検索結果の最大トークン数
     introduction_search_provider: SearchProvider = SearchProvider.TAVILY
     planning_search_provider: SearchProvider = SearchProvider.TAVILY
     # 検索時に利用可能なプロバイダーのリストを指定 (human feedback で確定させる)
@@ -115,11 +116,13 @@ class Configuration:
         default_factory=lambda: {
             "load_max_docs": 5,
             "get_full_documents": True,
+            "load_all_available_meta": True,
+            "add_aditional_metadata": True,
         }
     )
     local_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
-            "vector_store_path": "vector_store",
+            "vector_store_path": "data/vector_store",
             "local_document_path": None,
             "embedding_provider": "openai",
             "embedding_model": "text-embedding-3-small",
@@ -127,7 +130,7 @@ class Configuration:
     )
     google_patent_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
-            "db_path": "patent_database.sqlite",
+            "db_path": "data/patent_database.sqlite",
             "limit": 10,
         }
     )

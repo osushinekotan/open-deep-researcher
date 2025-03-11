@@ -383,6 +383,7 @@ async def patent_search(
     search_queries: list[str],
     db_path: str = "patent_database.sqlite",
     limit: int = 10,
+    max_tokens_per_source: int = 8192,
     **kwargs,
 ) -> str:
     """特許検索を実行
@@ -439,4 +440,4 @@ async def patent_search(
         if "retriever" in locals():
             retriever.close()
 
-    return deduplicate_and_format_sources(search_docs, max_tokens_per_source=8000)
+    return deduplicate_and_format_sources(search_docs, max_tokens_per_source=max_tokens_per_source)

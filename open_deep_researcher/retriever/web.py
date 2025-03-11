@@ -373,6 +373,7 @@ async def arxiv_search_async(  # noqa
     load_max_docs=5,
     get_full_documents=True,
     load_all_available_meta=True,
+    add_aditional_metadata=False,
 ):
     """
     Performs concurrent searches on arXiv using the ArxivRetriever.
@@ -447,29 +448,30 @@ async def arxiv_search_async(  # noqa
                     content_parts.append(f"Published: {published_str}")
 
                 # Add additional metadata if available
-                if "primary_category" in metadata:
-                    content_parts.append(f"Primary Category: {metadata['primary_category']}")
+                if add_aditional_metadata:
+                    if "primary_category" in metadata:
+                        content_parts.append(f"Primary Category: {metadata['primary_category']}")
 
-                if "categories" in metadata and metadata["categories"]:
-                    content_parts.append(f"Categories: {', '.join(metadata['categories'])}")
+                    if "categories" in metadata and metadata["categories"]:
+                        content_parts.append(f"Categories: {', '.join(metadata['categories'])}")
 
-                if "comment" in metadata and metadata["comment"]:
-                    content_parts.append(f"Comment: {metadata['comment']}")
+                    if "comment" in metadata and metadata["comment"]:
+                        content_parts.append(f"Comment: {metadata['comment']}")
 
-                if "journal_ref" in metadata and metadata["journal_ref"]:
-                    content_parts.append(f"Journal Reference: {metadata['journal_ref']}")
+                    if "journal_ref" in metadata and metadata["journal_ref"]:
+                        content_parts.append(f"Journal Reference: {metadata['journal_ref']}")
 
-                if "doi" in metadata and metadata["doi"]:
-                    content_parts.append(f"DOI: {metadata['doi']}")
+                    if "doi" in metadata and metadata["doi"]:
+                        content_parts.append(f"DOI: {metadata['doi']}")
 
-                # Get PDF link if available in the links
-                pdf_link = ""
-                if "links" in metadata and metadata["links"]:
-                    for link in metadata["links"]:
-                        if "pdf" in link:
-                            pdf_link = link
-                            content_parts.append(f"PDF: {pdf_link}")
-                            break
+                    # Get PDF link if available in the links
+                    pdf_link = ""
+                    if "links" in metadata and metadata["links"]:
+                        for link in metadata["links"]:
+                            if "pdf" in link:
+                                pdf_link = link
+                                content_parts.append(f"PDF: {pdf_link}")
+                                break
 
                 # Join all content parts with newlines
                 content = "\n".join(content_parts)
@@ -738,7 +740,12 @@ async def linkup_search(search_queries, depth: str | None = "standard"):
     return search_results
 
 
-async def web_search(search_api: str, query_list: list[str], params_to_pass: dict) -> str:
+async def web_search(
+    search_api: str,
+    query_list: list[str],
+    params_to_pass: dict,
+    max_tokens_per_source: int = 8192,
+) -> str:
     """Select and execute the appropriate search API.
 
     Args:
@@ -754,21 +761,23 @@ async def web_search(search_api: str, query_list: list[str], params_to_pass: dic
     """
     if search_api == "tavily":
         search_results = await tavily_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000, include_raw_content=False)
+        return deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=max_tokens_per_source, include_raw_content=False
+        )
     elif search_api == "perplexity":
         search_results = perplexity_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
+        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
     elif search_api == "exa":
         search_results = await exa_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
+        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
     elif search_api == "arxiv":
         search_results = await arxiv_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
+        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
     elif search_api == "pubmed":
         search_results = await pubmed_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
+        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
     elif search_api == "linkup":
         search_results = await linkup_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
+        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
     else:
         raise ValueError(f"Unsupported search API: {search_api}")
