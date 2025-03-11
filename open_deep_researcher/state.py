@@ -69,7 +69,6 @@ class SectionState(TypedDict):
     topic: str  # Report topic
     section: Section  # Report section
     search_iterations: int  # Number of search iterations done
-    search_queries: list[SearchQuery]  # List of search queries
     source_str: str  # String of formatted source content from web search
 
     search_results_by_provider: dict[str, str]  # 各プロバイダの検索結果

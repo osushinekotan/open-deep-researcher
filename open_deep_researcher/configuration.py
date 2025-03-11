@@ -97,7 +97,7 @@ class Configuration:
             # SearchProvider.PUBMED,
             # SearchProvider.EXA,
             # SearchProvider.LOCAL,
-            SearchProvider.GOOGLE_PATENT,
+            # SearchProvider.GOOGLE_PATENT,
         ]
     )
     # deep_research 時に利用するプロバイダーのリストを指定

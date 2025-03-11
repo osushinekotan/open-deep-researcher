@@ -508,13 +508,7 @@ def generate_queries(state: SectionState, config: RunnableConfig):
 
         search_queries_by_provider[provider] = queries.queries
 
-    # Default provider for backward compatibility
-    default_provider = search_options[0] if search_options else "tavily"
-
-    return {
-        "search_queries": search_queries_by_provider.get(default_provider, []),  # 後方互換性のため
-        "search_queries_by_provider": search_queries_by_provider,
-    }
+    return {"search_queries_by_provider": search_queries_by_provider}
 
 
 async def search(state: SectionState, config: RunnableConfig):
@@ -694,7 +688,7 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
         return Command(update={"completed_sections": [section], "all_urls": all_urls}, goto=END)
     else:
         return Command(
-            update={"search_queries": feedback.follow_up_queries, "section": section, "all_urls": all_urls},
+            update={"section": section, "all_urls": all_urls},
             goto="search",
         )
 
