@@ -101,6 +101,8 @@ class SectionModel(BaseModel):
     name: str
     description: str
     content: str | None = None
+    search_options: list | None = None 
+
 
 
 class PlanResponse(BaseModel):

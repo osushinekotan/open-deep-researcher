@@ -353,7 +353,7 @@ class ResearchManager:
         sections = []
         if task.get("sections"):
             sections = [
-                SectionModel(name=s["name"], description=s["description"], content=s.get("content", ""))
+                SectionModel(name=s["name"], description=s["description"], content=s.get("content", ""), search_options=s.get("search_options"))
                 for s in task["sections"]
             ]
 
@@ -385,7 +385,7 @@ class ResearchManager:
         sections = []
         if task.get("sections"):
             sections = [
-                SectionModel(name=s["name"], description=s["description"], content=s.get("content", ""))
+                SectionModel(name=s["name"], description=s["description"], content=s.get("content", ""), search_options=s.get("search_options"))
                 for s in task["sections"]
             ]
 
