@@ -14,25 +14,19 @@ Main Body Sections:
 """
 
 
-class SearchSource(Enum):
-    WEB = "web"
-    LOCAL = "local"
-    HYBRID = "hybrid"
-
-
-class PlannerProvider(Enum):
+class PlannerProvider(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     GROQ = "groq"
 
 
-class WriterProvider(Enum):
+class WriterProvider(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     GROQ = "groq"
 
 
-class SearchProvider(Enum):
+class SearchProvider(str, Enum):
     TAVILY = "tavily"
     ARXIV = "arxiv"
     PUBMED = "pubmed"
@@ -58,7 +52,7 @@ class Configuration:
     deep_research_depth: int = 1
     deep_research_breadth: int = 2
 
-    skip_human_feedback: bool = False
+    skip_human_feedback: bool = True
 
     planner_provider: PlannerProvider = PlannerProvider.OPENAI
     planner_model: str = "gpt-4o"
