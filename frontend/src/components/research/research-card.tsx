@@ -17,9 +17,6 @@ export function ResearchCard({ research }: ResearchCardProps) {
   const { status, topic, research_id: id, progress = 0 } = research;
   const statusInfo = getStatusInfo(status);
   
-  // 作成日を取得（実際のAPIレスポンスには含まれていないので、現時点では適当な値を使用）
-  const createdAt = new Date().toISOString();
-  
   // 進捗率を整数に変換（APIから小数で返される場合は100倍する）
   const progressPercentage = typeof progress === 'number' && progress <= 1 
     ? Math.round(progress * 100) 
@@ -30,10 +27,10 @@ export function ResearchCard({ research }: ResearchCardProps) {
       <CardHeader className="pb-2 space-y-2">
         <div className="flex justify-between items-start">
           <StatusBadge status={status} />
-          <div className="text-sm text-gray-500 flex items-center">
+          {/* <div className="text-sm text-gray-500 flex items-center">
             <Clock size={14} className="mr-1" />
-            {formatDate(createdAt)}
-          </div>
+            {formatDate(completedAt)}
+          </div> */}
         </div>
         <CardTitle className="text-lg font-semibold mt-1 line-clamp-2">{topic}</CardTitle>
       </CardHeader>
