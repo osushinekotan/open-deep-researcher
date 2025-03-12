@@ -10,6 +10,7 @@ export interface SectionModel {
   name: string;
   description: string;
   content?: string;
+  search_options?: any;
 }
 
 export interface ResearchStatus {
