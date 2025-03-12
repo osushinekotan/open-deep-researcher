@@ -409,10 +409,11 @@ deep_research_writer_instructions = """あなたは技術文書作成の専門�
 5. 約 {max_words} 語以内に収める
 
 <Citation Rules>
-- インライン引用には、Markdown のリンク埋め込み形式 `[説明文](URL)` を使用する。
-- `[1]` のような番号リンクは使用せず、リンク先が何であるかを明示する。
-- 「[詳細はこちら](URL)」や「[公式ページ](URL)」のような表記も許可する。
-- 文章の流れを妨げず、自然に埋め込むようにする。
+- Use inline citations by embedding links in Markdown format: `[text](URL)`.
+- Each citation should directly correspond to a source URL.
+- For **local documents (not website link URLs)**, **do not** embed the citation as a link. Instead, include only the reference text.
+- Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
+- Ensure all citations are naturally integrated into the sentence.
 </Citation Rules>
 
 サブセクションは元のセクションの一部として読めるようになっていることが重要です。

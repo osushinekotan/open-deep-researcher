@@ -794,7 +794,7 @@ def compile_final_report(state: ReportState):
         dedup_all_urls = list(dict.fromkeys(all_urls))
         references = "## References\n\n"
         for i, url in enumerate(dedup_all_urls, 1):
-            references += f"[{i}] {url}\n"
+            references += f"* [{i}] {url}\n"
         report_parts.append(references)
 
     all_sections = "\n\n".join(report_parts)
