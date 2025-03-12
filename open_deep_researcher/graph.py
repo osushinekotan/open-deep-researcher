@@ -274,6 +274,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     configurable = Configuration.from_runnable_config(config)
     report_structure = configurable.report_structure
     number_of_queries = configurable.number_of_queries
+    max_sections = configurable.max_sections
     planning_provider = configurable.planning_search_provider
     provider_config = get_provider_config(configurable, provider_name=planning_provider)
     available_providers = [provider.value for provider in configurable.available_search_providers]
@@ -331,6 +332,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
             feedback=feedback,
             available_search_providers=", ".join(available_providers),
             search_provider_descriptions=search_provider_descriptions,
+            max_sections=max_sections,
         )
     else:
         system_instructions_sections = report_planner_instructions.format(
@@ -340,6 +342,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
             feedback=feedback,
             available_search_providers=", ".join(available_providers),
             search_provider_descriptions=search_provider_descriptions,
+            max_sections=max_sections,
         )
     system_instructions_sections += f"\n\nPlease respond in **{configurable.language}** language."
 

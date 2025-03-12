@@ -42,6 +42,7 @@ class Configuration:
     report_structure: str = DEFAULT_REPORT_STRUCTURE  # Defaults to the default report structure
     number_of_queries: int = 2  # Number of search queries to generate per iteration
     max_reflection: int = 2  # Maximum number of reflection + search iterations
+    max_sections: int = 3  # Maximum number of sections in the report
 
     max_section_words: int = 10000  # セクション（main body）の最大単語数
     max_subsection_words: int = 10000  # サブセクションの最大単語数

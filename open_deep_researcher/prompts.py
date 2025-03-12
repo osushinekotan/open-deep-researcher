@@ -98,9 +98,10 @@ For example, a good report structure might look like:
 1/ overview of topic A
 2/ overview of topic B
 3/ comparison between A and B
-4/ conclusion
 
 **caution: do not include `introduction` and `conclusion` sections in the plan.**
+
+**caution: maximum number of sections is {max_sections}.**
 
 Each section should have the fields:
 
@@ -495,6 +496,8 @@ Create a plan for a report that will effectively answer the user's question. The
 3. Ensure no critical aspects are omitted
 4. Exclude any "conclusion" section - this will be generated separately
 5. Focus on gathering factual information needed to answer the question
+
+**caution: maximum number of sections is {max_sections}.**
 
 Each section should have the fields:
 - Name - Name for this section of the report
