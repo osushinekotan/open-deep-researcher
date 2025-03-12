@@ -34,6 +34,7 @@ class ResearchService:
                     existing_research.introduction = research_data.get("introduction")
                     existing_research.conclusion = research_data.get("conclusion")
                     existing_research.final_report = research_data.get("final_report")
+                    existing_research.completed_at = research_data.get("completed_at")
 
                     # 既存のセクションを削除
                     db.query(Section).filter(Section.research_id == research_data["id"]).delete()
@@ -49,6 +50,7 @@ class ResearchService:
                         config=config_json,
                         created_at=research_data.get("created_at", now),
                         updated_at=now,
+                        completed_at=research_data.get("completed_at"),
                         progress=research_data.get("progress", 0.0),
                         error=research_data.get("error"),
                         waiting_for_feedback=research_data.get("waiting_for_feedback", False),

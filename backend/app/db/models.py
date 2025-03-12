@@ -1,7 +1,8 @@
-from app.config import DATA_DIR
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+
+from app.config import DATA_DIR
 
 DB_DIR = DATA_DIR / "db"
 DB_DIR.mkdir(parents=True, exist_ok=True)
@@ -23,6 +24,7 @@ class Research(Base):
     status = Column(String, nullable=False)
     config = Column(Text)  # JSON形式で保存
     created_at = Column(String, nullable=False)
+    completed_at = Column(String)
     updated_at = Column(String, nullable=False)
     progress = Column(Float, default=0.0)
     error = Column(Text)

@@ -52,6 +52,7 @@ class ResearchManager:
                 "status": "initializing",
                 "config": config.dict() if config else {},
                 "created_at": datetime.now().isoformat(),
+                "completed_at": None,
                 "sections": [],
                 "completed_sections": [],
                 "final_report": None,
@@ -248,6 +249,7 @@ class ResearchManager:
                 task["final_report"] = event["compile_final_report"]["final_report"]
                 task["status"] = "completed"
                 task["progress"] = 1.0
+                task["completed_at"] = datetime.now().isoformat()
                 print(f"Research {research_id} completed!")
             else:
                 task["status"] = "compiling_report"
@@ -402,7 +404,9 @@ class ResearchManager:
             "research_id": research_id,
             "status": "completed",
             "final_report": task["final_report"],
-            "completed_at": datetime.now().isoformat(),
+            "completed_at": task.get(
+                "completed_at", task.get("created_at")
+            ),  # completed_at がなければ created_at を使用
         }
 
     async def list_researches(self) -> list[ResearchStatus]:

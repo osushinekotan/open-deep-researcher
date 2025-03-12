@@ -41,7 +41,6 @@ interface Reference {
 
 interface ReportViewerProps {
   topic: string;
-  createdAt: string;
   completedAt: string;
   sections: Section[];
   references?: Reference[];
@@ -49,7 +48,6 @@ interface ReportViewerProps {
 
 export function ReportViewer({ 
   topic, 
-  createdAt, 
   completedAt, 
   sections, 
   references = [] 
@@ -173,7 +171,6 @@ export function ReportViewer({
         <div className="md:col-span-3">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">{topic}</h1>
-            <p className="text-gray-500">作成日: {formatDate(createdAt)}</p>
           </div>
           
           <div className="prose prose-lg max-w-none">

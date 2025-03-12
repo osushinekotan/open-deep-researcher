@@ -123,16 +123,13 @@ export function ResultClient({ researchId }: { researchId: string }) {
   }
 
   // 作成日・完了日
-  const createdAt = research.created_at || new Date().toISOString();
   const completedAt = result.completed_at || new Date().toISOString();
 
   return (
     <ReportViewer
       topic={research.topic}
-      createdAt={createdAt}
       completedAt={completedAt}
       sections={reportSections}
       references={references}
     />
   );
-}
