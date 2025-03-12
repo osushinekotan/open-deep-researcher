@@ -123,3 +123,4 @@ class ResearchStatus(BaseModel):
     completed_sections: list[str] | None = None
     final_report: str | None = None
     error: str | None = None
+    completed_at: str | None = None

@@ -360,6 +360,7 @@ class ResearchManager:
             completed_sections=task.get("completed_sections", []),
             final_report=task.get("final_report"),
             error=task.get("error"),
+            completed_at=task.get("completed_at")  
         )
 
     async def get_research_plan(self, research_id: str) -> PlanResponse | None:
@@ -409,6 +410,7 @@ class ResearchManager:
             ),  # completed_at がなければ created_at を使用
         }
 
+
     async def list_researches(self) -> list[ResearchStatus]:
         """すべてのリサーチのリストを取得"""
         # データベースから全てのリサーチ情報を取得
@@ -427,6 +429,7 @@ class ResearchManager:
                 completed_sections=[],  # 簡易リストでは空のリストを返す
                 final_report=None,
                 error=research.get("error"),
+                completed_at=research.get("completed_at")
             )
             result.append(status)
 
