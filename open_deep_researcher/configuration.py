@@ -40,7 +40,7 @@ class Configuration:
     """The configurable fields for the chatbot."""
 
     report_structure: str = DEFAULT_REPORT_STRUCTURE  # Defaults to the default report structure
-    number_of_queries: int = 2  # Number of search queries to generate per iteration
+    number_of_queries: int = 1  # Number of search queries to generate per iteration
     max_reflection: int = 2  # Maximum number of reflection + search iterations
     max_sections: int = 3  # Maximum number of sections in the report
 
@@ -49,11 +49,11 @@ class Configuration:
     max_introduction_words: int = 10000  # イントロダクションの最大単語数
     max_conclusion_words: int = 10000  # 結論の最大単語数
 
-    enable_deep_research: bool = True
+    enable_deep_research: bool = False
     deep_research_depth: int = 1
     deep_research_breadth: int = 2
 
-    skip_human_feedback: bool = True
+    skip_human_feedback: bool = False
 
     planner_provider: PlannerProvider = PlannerProvider.OPENAI
     planner_model: str = "gpt-4o"
@@ -65,7 +65,7 @@ class Configuration:
     )
 
     writer_provider: WriterProvider = WriterProvider.OPENAI
-    writer_model: str = "gpt-4o"
+    writer_model: str = "gpt-4o-mini"
     writer_model_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_tokens": 8192,
@@ -74,7 +74,7 @@ class Configuration:
     )
 
     conclusion_writer_provider: WriterProvider = WriterProvider.OPENAI
-    conclusion_writer_model: str = "o3-mini"
+    conclusion_writer_model: str = "gpt-4o-mini"
     conclusion_writer_model_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_tokens": 8192,
