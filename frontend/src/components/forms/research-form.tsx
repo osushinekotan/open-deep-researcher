@@ -683,7 +683,7 @@ export function ResearchForm() {
                     </Label>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="search_pubmed" 
                       checked={config.available_search_providers?.includes(SearchProviderEnum.PUBMED)}
@@ -711,7 +711,7 @@ export function ResearchForm() {
                       PubMed
                       <span className="text-xs font-normal text-gray-500">(医学・生物学論文)</span>
                     </Label>
-                  </div>
+                  </div> */}
                   
                   <div className="flex items-center space-x-2">
                     <Checkbox 
@@ -775,6 +775,121 @@ export function ResearchForm() {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">少なくとも1つの検索プロバイダーを選択してください</p>
               </div>
+              {config.available_search_providers && config.available_search_providers.length > 0 && (
+                <Accordion type="single" collapsible defaultValue="provider-settings" className="w-full border rounded-lg overflow-hidden">
+                  <AccordionItem value="provider-settings" className="border-none">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 text-base font-medium">
+                        <Settings size={16} /> 
+                        <span>検索プロバイダー詳細設定</span>
+                        <InfoTooltip content="各検索プロバイダーの詳細設定を行います。最大取得件数や追加機能を設定できます。">
+                          <span></span>
+                        </InfoTooltip>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-3 pb-1 px-4 space-y-6 bg-white">
+                      {/* Tavily設定 */}
+                      {config.available_search_providers.includes(SearchProviderEnum.TAVILY) && (
+                        <div className="p-4 space-y-3">
+                          <h4 className="font-medium text-sm flex items-center gap-1.5">
+                            <Search size={14} />
+                            Tavily 設定
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="tavily_max_results" className="text-sm">最大取得件数</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider 
+                                  id="tavily_max_results"
+                                  defaultValue={[config.tavily_search_config?.max_results || 5]} 
+                                  min={1} 
+                                  max={10} 
+                                  step={1} 
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({ 
+                                    tavily_search_config: { 
+                                      ...config.tavily_search_config,
+                                      max_results: values[0] 
+                                    } 
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-8 text-right">{config.tavily_search_config?.max_results || 5}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* arXiv設定 */}
+                      {config.available_search_providers.includes(SearchProviderEnum.ARXIV) && (
+                        <div className=" p-4 space-y-3">
+                          <h4 className="font-medium text-sm flex items-center gap-1.5">
+                            <Database size={14} />
+                            arXiv 設定
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="arxiv_max_docs" className="text-sm">最大取得論文数</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider 
+                                  id="arxiv_max_docs"
+                                  defaultValue={[config.arxiv_search_config?.load_max_docs || 5]} 
+                                  min={1} 
+                                  max={10} 
+                                  step={1} 
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({ 
+                                    arxiv_search_config: { 
+                                      ...config.arxiv_search_config,
+                                      load_max_docs: values[0] 
+                                    } 
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-8 text-right">{config.arxiv_search_config?.load_max_docs || 5}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Google Patent設定 */}
+                      {config.available_search_providers.includes(SearchProviderEnum.GOOGLE_PATENT) && (
+                        <div className="rounded-lg p-4 space-y-3">
+                          <h4 className="font-medium text-sm flex items-center gap-1.5">
+                            <Database size={14} />
+                            Google Patent 設定
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="patent_max_results" className="text-sm">最大取得特許数</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider 
+                                  id="patent_max_results"
+                                  defaultValue={[config.google_patent_search_config?.max_results || 5]} 
+                                  min={1} 
+                                  max={10} 
+                                  step={1} 
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({ 
+                                    google_patent_search_config: { 
+                                      ...config.google_patent_search_config,
+                                      max_results: values[0] 
+                                    } 
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-8 text-right">{config.google_patent_search_config?.max_results || 5}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              )}
               
               {/* デフォルト検索プロバイダー設定 */}
               {config.available_search_providers && config.available_search_providers.length > 0 && (
@@ -805,6 +920,7 @@ export function ResearchForm() {
                   </Select>
                 </div>
               )}
+              
               
               {/* クエリ数設定 */}
               <div className="space-y-3">

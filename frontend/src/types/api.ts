@@ -63,6 +63,35 @@ export enum WriterProviderEnum {
   GROQ = "groq"
 }
 
+// Tavilyの検索設定インターフェース
+export interface TavilySearchConfig {
+  max_results: number;
+  include_raw_content: boolean;
+}
+
+// arXivの検索設定インターフェース
+export interface ArxivSearchConfig {
+  load_max_docs: number;
+  get_full_documents: boolean;
+}
+
+// PubMedの検索設定インターフェース
+export interface PubmedSearchConfig {
+  max_results: number;
+  try_full_text: boolean;
+}
+
+// Google Patentの検索設定インターフェース
+export interface GooglePatentSearchConfig {
+  max_results: number;
+}
+
+// ローカル検索の設定インターフェース
+export interface LocalSearchConfig {
+  embedding_provider: string;
+  embedding_model: string;
+}
+
 export interface ResearchConfig {
   report_structure?: string;
   number_of_queries?: number;
@@ -90,10 +119,11 @@ export interface ResearchConfig {
   deep_research_providers?: SearchProviderEnum[];
   default_search_provider?: SearchProviderEnum;
   max_tokens_per_source?: number;
-  tavily_search_config?: Record<string, any>;
-  arxiv_search_config?: Record<string, any>;
-  local_search_config?: Record<string, any>;
-  google_patent_search_config?: Record<string, any>;
+  tavily_search_config?: TavilySearchConfig;
+  arxiv_search_config?: ArxivSearchConfig;
+  pubmed_search_config?: PubmedSearchConfig;
+  local_search_config?: LocalSearchConfig;
+  google_patent_search_config?: GooglePatentSearchConfig;
   language?: string;
 }
 
