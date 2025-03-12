@@ -24,8 +24,8 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">リサーチダッシュボード</h1>
-        <p className="text-gray-500 mt-2">あなたのリサーチプロジェクトを管理します</p>
+        <h1 className="text-3xl font-bold">Research Dashboard</h1>
+        <p className="text-gray-500 mt-2">リサーチプロジェクトを管理します</p>
       </div>
 
       {researches && researches.length > 0 && (
@@ -35,7 +35,7 @@ export default function DashboardPage() {
           </div>
           <Input
             type="text"
-            placeholder="リサーチを検索..."
+            placeholder="Search Research Task..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

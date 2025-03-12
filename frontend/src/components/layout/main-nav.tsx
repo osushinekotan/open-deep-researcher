@@ -11,7 +11,7 @@ export function MainNav() {
   const navItems = [
     {
       href: "/dashboard",
-      label: "ダッシュボード",
+      label: "Dashboard",
       icon: <LayoutDashboard size={16} />,
       active: pathname === "/dashboard" || pathname === "/",
     },

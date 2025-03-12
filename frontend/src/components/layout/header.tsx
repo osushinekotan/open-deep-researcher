@@ -18,7 +18,7 @@ export function Header() {
           <Link href="/new-research">
             <Button className="gap-1.5 bg-blue-600 hover:bg-blue-700 shadow-sm">
               <Plus size={16} />
-              <span>新規リサーチ</span>
+              <span>New Research</span>
             </Button>
           </Link>
         </div>

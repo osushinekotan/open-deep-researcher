@@ -77,7 +77,7 @@ export function ResearchForm() {
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <Rocket size={20} />
-            リサーチトピック
+            Research Topic
           </CardTitle>
           <CardDescription>
             探求したいトピックや質問を入力してください
@@ -99,7 +99,7 @@ export function ResearchForm() {
                 required
               />
               <p className="text-sm text-gray-500 mt-1">
-                質問形式で入力すると、より的確な回答が得られます
+                "?" をつけることで質問として解釈され、その回答をリサーチします
               </p>
             </div>
           </div>
@@ -128,7 +128,7 @@ export function ResearchForm() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="language" className="text-base font-medium">言語設定</Label>
                     <Select 
@@ -141,16 +141,15 @@ export function ResearchForm() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="japanese">日本語</SelectItem>
-                        <SelectItem value="english">英語</SelectItem>
+                        <SelectItem value="english">English</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="deep_research" className="text-base font-medium">詳細なリサーチ</Label>
                     <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md border">
                       <div>
-                        <p className="font-medium">詳細なリサーチを有効化</p>
+                        <p className="font-medium">Deep Research を有効化</p>
                         <p className="text-sm text-gray-500">より詳細で深い分析を行います</p>
                       </div>
                       <Switch 
@@ -164,7 +163,6 @@ export function ResearchForm() {
                 </div>
                 
                 <div className="space-y-3">
-                  <Label htmlFor="skip_feedback" className="text-base font-medium">フィードバック設定</Label>
                   <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md border">
                     <div>
                       <p className="font-medium">フィードバックをスキップ</p>
@@ -364,7 +362,7 @@ export function ResearchForm() {
                 <CardHeader className="pb-3 pt-4">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Layers size={16} />
-                    詳細リサーチ設定
+                    Deep Research 設定
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-0">
