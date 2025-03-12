@@ -74,3 +74,15 @@ async def get_research_result(
 async def list_researches(research_manager: ResearchManager = Depends(get_research_manager)):  # noqa
     """すべてのリサーチのリストを取得"""
     return await research_manager.list_researches()
+
+
+@router.delete("/{research_id}")
+async def delete_research(
+    research_id: str,
+    research_manager: ResearchManager = Depends(get_research_manager),  # noqa
+):
+    """リサーチを削除"""
+    success = await research_manager.delete_research(research_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Research ID {research_id} not found")
+    return {"message": f"Research {research_id} successfully deleted"}

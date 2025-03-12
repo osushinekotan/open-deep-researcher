@@ -366,7 +366,7 @@ class ResearchManager:
             completed_sections=task.get("completed_sections", []),
             final_report=task.get("final_report"),
             error=task.get("error"),
-            completed_at=task.get("completed_at")  
+            completed_at=task.get("completed_at"),
         )
 
     async def get_research_plan(self, research_id: str) -> PlanResponse | None:
@@ -416,7 +416,6 @@ class ResearchManager:
             ),  # completed_at がなければ created_at を使用
         }
 
-
     async def list_researches(self) -> list[ResearchStatus]:
         """すべてのリサーチのリストを取得"""
         # データベースから全てのリサーチ情報を取得
@@ -435,11 +434,26 @@ class ResearchManager:
                 completed_sections=[],  # 簡易リストでは空のリストを返す
                 final_report=None,
                 error=research.get("error"),
-                completed_at=research.get("completed_at")
+                completed_at=research.get("completed_at"),
             )
             result.append(status)
 
         return result
+
+    async def delete_research(self, research_id: str) -> bool:
+        """リサーチを削除する"""
+        # データベースからリサーチ情報を取得
+        if research_id not in self.research_tasks:
+            research_data = self.research_service.get_research(research_id)
+            if not research_data:
+                return False
+
+        # メモリから削除
+        if research_id in self.research_tasks:
+            del self.research_tasks[research_id]
+
+        # データベースから削除
+        return self.research_service.delete_research(research_id)
 
 
 _research_manager = None

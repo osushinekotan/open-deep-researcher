@@ -14,6 +14,7 @@ const API_ENDPOINTS = {
   GET_RESEARCH_STATUS: (id: string) => `/research/${id}/status`,
   GET_RESEARCH_PLAN: (id: string) => `/research/${id}/plan`,
   GET_RESEARCH_RESULT: (id: string) => `/research/${id}/result`,
+  DELETE_RESEARCH: (id: string) => `/research/${id}`, // 追加: 削除エンドポイント
   SUBMIT_FEEDBACK: '/feedback/submit',
 };
 
@@ -73,4 +74,19 @@ export const researchService = {
     const response = await apiClient.get(API_ENDPOINTS.LIST_RESEARCHES);
     return response.data;
   },
+
+  // リサーチ削除
+  deleteResearch: async (researchId: string): Promise<{ message: string }> => {
+    const endpoint = API_ENDPOINTS.DELETE_RESEARCH(researchId);
+    console.log(`リサーチ削除: ${endpoint}`);
+    try {
+      const response = await apiClient.delete(endpoint);
+      console.log('リサーチ削除成功:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('リサーチ削除エラー:', error);
+      throw error;
+    }
+  }
 };
+

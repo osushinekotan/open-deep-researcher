@@ -64,3 +64,15 @@ export const useStartResearch = () => {
     },
   });
 };
+
+export const useDeleteResearch = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (researchId: string) => researchService.deleteResearch(researchId),
+    onSuccess: () => {
+      // リサーチリストを更新
+      queryClient.invalidateQueries({ queryKey: ['researches'] });
+    },
+  });
+};
