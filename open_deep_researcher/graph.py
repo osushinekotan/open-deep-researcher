@@ -58,19 +58,18 @@ PROVIDER_DESCRIPTIONS = {
 
 def get_provider_config(configurable: Configuration, provider_name: str) -> dict:
     """指定された検索プロバイダの設定を取得する"""
-    provider_str = provider_name.lower()
 
-    if provider_str == "tavily":
+    if provider_name == "tavily":
         return configurable.tavily_search_config or {}
-    elif provider_str == "arxiv":
+    elif provider_name == "arxiv":
         return configurable.arxiv_search_config or {}
-    elif provider_str == "pubmed":
+    elif provider_name == "pubmed":
         return configurable.pubmed_search_config or {}
-    elif provider_str == "exa":
+    elif provider_name == "exa":
         return configurable.exa_search_config or {}
-    elif provider_str == "local":
+    elif provider_name == "local":
         return configurable.local_search_config or {}
-    elif provider_str == "google_patent":
+    elif provider_name == "google_patent":
         return configurable.google_patent_search_config or {}
     else:
         # デフォルト設定（空の辞書）を返す
@@ -527,71 +526,70 @@ async def search(state: SectionState, config: RunnableConfig):
     all_urls = []
 
     for provider in search_options:
-        provider_str = provider.lower() if isinstance(provider, str) else provider.value
         try:
-            queries = search_queries_by_provider.get(provider_str, [])
+            queries = search_queries_by_provider.get(provider, [])
             if not queries:
                 continue
 
             query_list = [query.search_query for query in queries]
 
             # プロバイダごとの設定を取得
-            if provider_str == "tavily":
+            if provider == "tavily":
                 search_result = await web_search(
                     "tavily",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider_str),
+                    params_to_pass=get_provider_config(configurable, provider),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider_str == "arxiv":
+            elif provider == "arxiv":
                 search_result = await web_search(
                     "arxiv",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider_str),
+                    params_to_pass=get_provider_config(configurable, provider),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider_str == "pubmed":
+            elif provider == "pubmed":
                 search_result = await web_search(
                     "pubmed",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider_str),
+                    params_to_pass=get_provider_config(configurable, provider),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider_str == "exa":
+            elif provider == "exa":
                 search_result = await web_search(
                     "exa",
                     query_list,
-                    params_to_pass=get_provider_config(configurable, provider_str),
+                    params_to_pass=get_provider_config(configurable, provider),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider_str == "local":
+            elif provider == "local":
                 search_result = await local_search(
                     query_list,
                     max_tokens_per_source=max_tokens_per_source,
-                    **get_provider_config(configurable, provider_str),
+                    **get_provider_config(configurable, provider),
                 )
-            elif provider_str == "google_patent":
+            elif provider == "google_patent":
                 search_result = await patent_search(
                     query_list,
                     max_tokens_per_source=max_tokens_per_source,
-                    **get_provider_config(configurable, provider_str),
+                    **get_provider_config(configurable, provider),
                 )
             else:
                 continue
 
-            search_results_by_provider[provider_str] = search_result
+            search_results_by_provider[provider] = search_result
 
             # URLを収集
             provider_urls = extract_urls_from_search_results(search_result)
             all_urls.extend(provider_urls)
 
         except Exception as e:
-            print(f"プロバイダ '{provider_str}' の検索中にエラーが発生しました: {str(e)}")
+            print(f"プロバイダ '{provider}' の検索中にエラーが発生しました: {str(e)}")
             search_results_by_provider[provider] = f"エラー: {str(e)}"
 
     # 全プロバイダの結果を結合
     combined_results = "\n\n".join(
-        [f"=== {provider_str} SEARCH RESULTS ===\n{result}" for provider, result in search_results_by_provider.items()]
+        [f"=== {provider} SEARCH RESULTS ===\n{result}" for provider, result in search_results_by_provider.items()]
     )
 
     return {
@@ -919,22 +917,21 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
         for provider in deep_research_providers:
             try:
                 # プロバイダごとの設定を取得
-                provider_str = provider.value if hasattr(provider, "value") else str(provider)
-                provider_config = get_provider_config(configurable, provider_name=provider_str)
+                provider_config = get_provider_config(configurable, provider_name=provider)
 
                 # 適切な検索関数を呼び出す
-                if provider_str == "local":
+                if provider == "local":
                     result = await local_search(query_list, **provider_config)
-                elif provider_str == "google_patent":
+                elif provider == "google_patent":
                     result = await patent_search(query_list, **provider_config)
                 else:
-                    result = await web_search(provider_str, query_list, provider_config)
+                    result = await web_search(provider, query_list, provider_config)
 
                 extracted_urls = extract_urls_from_search_results(result)
                 all_urls.extend(extracted_urls)
                 subtopic_results.append(result)
             except Exception as e:
-                print(f"deep research '{provider_str}' の使用中にエラーが発生しました: {str(e)}")
+                print(f"deep research '{provider}' の使用中にエラーが発生しました: {str(e)}")
 
         # 結果を結合
         results_by_subtopic[subtopic_name] = "\n\n".join(subtopic_results)
