@@ -187,6 +187,7 @@ class ResearchService:
                         "status": research.status,
                         "created_at": research.created_at,
                         "updated_at": research.updated_at,
+                        "completed_at": research.completed_at,
                         "progress": research.progress,
                         "error": research.error,
                         "waiting_for_feedback": research.waiting_for_feedback,
