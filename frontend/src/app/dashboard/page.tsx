@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ResearchCard } from "@/components/research/research-card";
-import { Plus, Search } from "lucide-react";
+import { Search, Rocket } from "lucide-react";
 import { useResearchList } from "@/hooks/use-research";
 import { ResearchStatus } from "@/types/api";
 import { Input } from "@/components/ui/input";
@@ -67,14 +67,12 @@ export default function DashboardPage() {
         </div>
       ) : !researches || researches.length === 0 ? (
         // データが空の場合
-        <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 className="text-xl font-medium mb-2">リサーチがありません</h3>
-          <p className="text-gray-600 mb-6">新しいリサーチを作成して始めましょう</p>
+        <div className="text-center py-16 bg-white-50 rounded-lg border border-gray-200">
           <Link href="/new-research">
-            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-              <Plus size={16} />
-              <span>新規リサーチ</span>
-            </Button>
+            <p className="flex items-center justify-center gap-1.5 text-blue-600 text-xl mb-6">
+              新しいリサーチを作成して始めましょう
+              <Rocket size={20} />
+            </p>
           </Link>
         </div>
       ) : filteredResearches?.length === 0 ? (
