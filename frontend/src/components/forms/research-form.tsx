@@ -828,9 +828,7 @@ export function ResearchForm() {
 
               {/* リフレクション設定 */}
               <div className="space-y-3">
-                <InfoTooltip content="検索結果を分析して追加の検索を行う回数を指定します。より多くのリフレクションを行うと、より深い分析が可能になりますが、実行時間が長くなります。">
-                  <Label className="text-base font-medium">リフレクション数</Label>
-                </InfoTooltip>
+                <Label className="text-base font-medium">リフレクション数</Label>
                 <div className="flex items-center gap-4">
                   <Slider 
                     defaultValue={[config.max_reflection || 2]} 
@@ -843,7 +841,7 @@ export function ResearchForm() {
                   />
                   <span className="text-sm font-medium w-8 text-right">{config.max_reflection || 2}</span>
                 </div>
-                <p className="text-xs text-gray-500">検索結果を分析して追加の検索を行う回数</p>
+                <p className="text-xs text-gray-500">セクションごとにレポートプランを遂行できているかを判定する最大数</p>
               </div>
               
               {/* Deep Research 設定 */}
