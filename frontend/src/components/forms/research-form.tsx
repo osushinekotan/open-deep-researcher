@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import {
   Select,
@@ -125,51 +126,57 @@ export function ResearchForm() {
                 リサーチの基本的な動作を設定します
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="skip_feedback" className="flex flex-col">
-                    <div className="font-medium">フィードバックをスキップ</div>
-                    <p className="text-sm text-gray-500">プランの確認をスキップして自動的に実行</p>
-                  </Label>
-                  <Switch 
-                    id="skip_feedback" 
-                    checked={config.skip_human_feedback}
-                    onCheckedChange={(checked) => updateConfig({ skip_human_feedback: checked })}
-                    disabled={isPending}
-                  />
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="language" className="text-base font-medium">言語設定</Label>
+                    <Select 
+                      defaultValue={config.language} 
+                      onValueChange={(value) => updateConfig({ language: value })}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger id="language" className="w-full">
+                        <SelectValue placeholder="言語を選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="japanese">日本語</SelectItem>
+                        <SelectItem value="english">英語</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="deep_research" className="text-base font-medium">詳細なリサーチ</Label>
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md border">
+                      <div>
+                        <p className="font-medium">詳細なリサーチを有効化</p>
+                        <p className="text-sm text-gray-500">より詳細で深い分析を行います</p>
+                      </div>
+                      <Switch 
+                        id="deep_research" 
+                        defaultChecked={config.enable_deep_research}
+                        onCheckedChange={(checked) => updateConfig({ enable_deep_research: checked })}
+                        disabled={isPending}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="language">言語設定</Label>
-                <Select 
-                  defaultValue={config.language} 
-                  onValueChange={(value) => updateConfig({ language: value })}
-                  disabled={isPending}
-                >
-                  <SelectTrigger id="language">
-                    <SelectValue placeholder="言語を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="japanese">日本語</SelectItem>
-                    <SelectItem value="english">英語</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="deep_research" className="flex flex-col">
-                    <div className="font-medium">詳細なリサーチを有効化</div>
-                    <p className="text-sm text-gray-500">より詳細で深い分析を行います</p>
-                  </Label>
-                  <Switch 
-                    id="deep_research" 
-                    defaultChecked={config.enable_deep_research}
-                    onCheckedChange={(checked) => updateConfig({ enable_deep_research: checked })}
-                    disabled={isPending}
-                  />
+                
+                <div className="space-y-3">
+                  <Label htmlFor="skip_feedback" className="text-base font-medium">フィードバック設定</Label>
+                  <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md border">
+                    <div>
+                      <p className="font-medium">フィードバックをスキップ</p>
+                      <p className="text-sm text-gray-500">プランの確認をスキップして自動的に実行</p>
+                    </div>
+                    <Switch 
+                      id="skip_feedback" 
+                      checked={config.skip_human_feedback}
+                      onCheckedChange={(checked) => updateConfig({ skip_human_feedback: checked })}
+                      disabled={isPending}
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -185,75 +192,59 @@ export function ResearchForm() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* モデル設定セクション */}
+              {/* LLM設定セクション */}
               <Card className="border-gray-200">
                 <CardHeader className="pb-3 pt-4">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Settings size={16} />
-                    モデル設定
+                    LLM設定
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-0">
                   <div className="space-y-2">
-                    <Label htmlFor="planner_provider">プランナープロバイダー</Label>
+                    <Label htmlFor="llm_provider">LLMプロバイダー</Label>
                     <Select 
-                      defaultValue={config.planner_provider} 
-                      onValueChange={(value) => updateConfig({ 
-                        planner_provider: value as PlannerProviderEnum 
-                      })}
-                      disabled={isPending}
+                      defaultValue="openai" 
+                      disabled={true}
                     >
-                      <SelectTrigger id="planner_provider">
+                      <SelectTrigger id="llm_provider">
                         <SelectValue placeholder="プロバイダーを選択" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={PlannerProviderEnum.OPENAI}>OpenAI</SelectItem>
-                        <SelectItem value={PlannerProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
-                        <SelectItem value={PlannerProviderEnum.GROQ}>Groq</SelectItem>
+                        <SelectItem value="openai">OpenAI</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500">現在OpenAIのみサポートしています</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="planner_model">プランナーモデル</Label>
+                    <Label htmlFor="llm_model">LLMモデル</Label>
                     <Select 
-                      defaultValue={config.planner_model}
-                      onValueChange={(value) => updateConfig({ planner_model: value })}
+                      defaultValue={config.planner_model || "gpt-4o"}
+                      onValueChange={(value) => {
+                        // plannerとwriterの両方のモデルを同じ値に更新
+                        updateConfig({ 
+                          planner_model: value,
+                          writer_model: value,
+                          planner_provider: PlannerProviderEnum.OPENAI,
+                          writer_provider: WriterProviderEnum.OPENAI
+                        });
+                      }}
                       disabled={isPending}
                     >
-                      <SelectTrigger id="planner_model">
+                      <SelectTrigger id="llm_model">
                         <SelectValue placeholder="モデルを選択" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="writer_provider">ライタープロバイダー</Label>
-                    <Select 
-                      defaultValue={config.writer_provider}
-                      onValueChange={(value) => updateConfig({ 
-                        writer_provider: value as WriterProviderEnum 
-                      })}
-                      disabled={isPending}
-                    >
-                      <SelectTrigger id="writer_provider">
-                        <SelectValue placeholder="プロバイダーを選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={WriterProviderEnum.OPENAI}>OpenAI</SelectItem>
-                        <SelectItem value={WriterProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
-                        <SelectItem value={WriterProviderEnum.GROQ}>Groq</SelectItem>
+                        <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </CardContent>
               </Card>
               
-              {/* 検索設定セクション */}
+              {/* 検索設定セクション - マルチチョイスに変更 */}
               <Card className="border-gray-200">
                 <CardHeader className="pb-3 pt-4">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -263,22 +254,91 @@ export function ResearchForm() {
                 </CardHeader>
                 <CardContent className="space-y-4 pt-0">
                   <div className="space-y-2">
-                    <Label htmlFor="search_provider">検索プロバイダー</Label>
-                    <Select 
-                      defaultValue={config.default_search_provider}
-                      onValueChange={(value) => updateConfig({ 
-                        default_search_provider: value as SearchProviderEnum 
-                      })}
-                      disabled={isPending}
-                    >
-                      <SelectTrigger id="search_provider">
-                        <SelectValue placeholder="プロバイダーを選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={SearchProviderEnum.TAVILY}>Tavily</SelectItem>
-                        <SelectItem value={SearchProviderEnum.ARXIV}>arXiv</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="search_providers" className="block mb-2">検索プロバイダー</Label>
+                    <div className="space-y-3 border rounded-md p-4 bg-gray-50">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="search_tavily" 
+                          checked={config.available_search_providers?.includes(SearchProviderEnum.TAVILY)}
+                          onCheckedChange={(checked) => {
+                            const providers = [...(config.available_search_providers || [])];
+                            if (checked) {
+                              if (!providers.includes(SearchProviderEnum.TAVILY)) {
+                                providers.push(SearchProviderEnum.TAVILY);
+                              }
+                            } else {
+                              const index = providers.indexOf(SearchProviderEnum.TAVILY);
+                              if (index >= 0) {
+                                providers.splice(index, 1);
+                              }
+                            }
+                            updateConfig({ 
+                              available_search_providers: providers,
+                              default_search_provider: providers.length > 0 ? providers[0] : undefined
+                            });
+                          }}
+                          disabled={isPending}
+                        />
+                        <label htmlFor="search_tavily" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Tavily
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="search_arxiv" 
+                          checked={config.available_search_providers?.includes(SearchProviderEnum.ARXIV)}
+                          onCheckedChange={(checked) => {
+                            const providers = [...(config.available_search_providers || [])];
+                            if (checked) {
+                              if (!providers.includes(SearchProviderEnum.ARXIV)) {
+                                providers.push(SearchProviderEnum.ARXIV);
+                              }
+                            } else {
+                              const index = providers.indexOf(SearchProviderEnum.ARXIV);
+                              if (index >= 0) {
+                                providers.splice(index, 1);
+                              }
+                            }
+                            updateConfig({ 
+                              available_search_providers: providers,
+                              default_search_provider: providers.length > 0 ? providers[0] : undefined
+                            });
+                          }}
+                          disabled={isPending}
+                        />
+                        <label htmlFor="search_arxiv" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          arXiv
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="search_patent" 
+                          checked={config.available_search_providers?.includes(SearchProviderEnum.GOOGLE_PATENT)}
+                          onCheckedChange={(checked) => {
+                            const providers = [...(config.available_search_providers || [])];
+                            if (checked) {
+                              if (!providers.includes(SearchProviderEnum.GOOGLE_PATENT)) {
+                                providers.push(SearchProviderEnum.GOOGLE_PATENT);
+                              }
+                            } else {
+                              const index = providers.indexOf(SearchProviderEnum.GOOGLE_PATENT);
+                              if (index >= 0) {
+                                providers.splice(index, 1);
+                              }
+                            }
+                            updateConfig({ 
+                              available_search_providers: providers,
+                              default_search_provider: providers.length > 0 ? providers[0] : undefined
+                            });
+                          }}
+                          disabled={isPending}
+                        />
+                        <label htmlFor="search_patent" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Google Patent
+                        </label>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">複数選択可能です。少なくとも1つは選択してください。</p>
                   </div>
                   
                   <div className="space-y-4">

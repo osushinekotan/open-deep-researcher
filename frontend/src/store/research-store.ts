@@ -24,6 +24,8 @@ const defaultConfig: ResearchConfig = {
   planner_model: 'gpt-4o',
   writer_provider: WriterProviderEnum.OPENAI,
   writer_model: 'gpt-4o',
+  available_search_providers: [SearchProviderEnum.TAVILY],
+  deep_research_providers: [SearchProviderEnum.TAVILY],
   default_search_provider: SearchProviderEnum.TAVILY,
   language: 'japanese',
 };
@@ -33,8 +35,10 @@ export const useResearchStore = create<ResearchState>((set) => ({
   config: { ...defaultConfig },
   
   setTopic: (topic) => set({ topic }),
+  
   updateConfig: (partialConfig) => set((state) => ({ 
     config: { ...state.config, ...partialConfig } 
   })),
+  
   resetForm: () => set({ topic: '', config: { ...defaultConfig } }),
 }));

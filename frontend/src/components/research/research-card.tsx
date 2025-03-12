@@ -22,15 +22,20 @@ export function ResearchCard({ research }: ResearchCardProps) {
     ? Math.round(progress * 100) 
     : Math.round(progress);
   
+  // 日付表示用（完了した場合はcompleted_atを使用、それ以外は現在日時）
+  const displayDate = status === 'completed' && research.completed_at 
+    ? research.completed_at 
+    : new Date().toISOString();
+  
   return (
     <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-200">
       <CardHeader className="pb-2 space-y-2">
         <div className="flex justify-between items-start">
           <StatusBadge status={status} />
-          {/* <div className="text-sm text-gray-500 flex items-center">
+          <div className="text-sm text-gray-500 flex items-center">
             <Clock size={14} className="mr-1" />
-            {formatDate(completedAt)}
-          </div> */}
+            {formatDate(displayDate)}
+          </div>
         </div>
         <CardTitle className="text-lg font-semibold mt-1 line-clamp-2">{topic}</CardTitle>
       </CardHeader>
