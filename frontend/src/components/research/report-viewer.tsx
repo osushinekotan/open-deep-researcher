@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +23,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { formatDate } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 interface Section {
   id: string;
@@ -57,17 +56,12 @@ export function ReportViewer({
 }: ReportViewerProps) {
   const [activeSection, setActiveSection] = useState(sections[0]?.id);
 
-  // マークアップをレンダリングする関数
-  const renderHTML = (html: string) => {
-    return { __html: html };
-  };
-
   return (
-    <div className="container mx-auto pb-12">
-      {/* ヘッダー部分 */}
-      <div className="bg-gray-50 border-b sticky top-0 z-10 py-4 px-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="font-semibold">レポート表示</div>
+    <div className="min-h-screen flex flex-col">
+      {/* ヘッダー部分 - 幅を修正し背景色を変更 */}
+      <div className="bg-white border-b sticky top-0 z-10 py-4 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end items-center">
+          {/* <div className="font-semibold">Research Report</div> */}
           
           <div className="flex gap-2">
             <TooltipProvider>
@@ -140,7 +134,7 @@ export function ReportViewer({
         </div>
       </div>
       
-      <div className="max-w-7xl mx-auto px-4 pt-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 pt-8 flex-grow grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* サイドバー: 目次 */}
         <div className="hidden md:block md:col-span-1">
           <div className="sticky top-24">
@@ -175,7 +169,7 @@ export function ReportViewer({
           </div>
         </div>
         
-        {/* メインコンテンツ */}
+        {/* メインコンテンツ - Markdownレンダリングを追加 */}
         <div className="md:col-span-3">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">{topic}</h1>
@@ -186,7 +180,18 @@ export function ReportViewer({
             {sections.map(section => (
               <div key={section.id} id={section.id} className="mb-12">
                 <h2 className="text-2xl font-bold mb-4">{section.title}</h2>
-                <div dangerouslySetInnerHTML={renderHTML(section.content)} />
+                {/* Markdownレンダリングを実装 - wrapperで囲む形に修正 */}
+                <div className="prose max-w-none">
+                <ReactMarkdown
+                  components={{
+                    a: ({node, ...props}) => (
+                      <a {...props} className="text-blue-600 hover:underline" />
+                    )
+                  }}
+                >
+                  {section.content}
+                </ReactMarkdown>
+                </div>
               </div>
             ))}
             
