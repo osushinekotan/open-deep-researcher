@@ -198,6 +198,7 @@ class ResearchManager:
 
         elif "determine_if_question" in event:
             task["status"] = "analyzing_question"
+            task["progress"] = 0.1
 
         elif "generate_introduction" in event:
             task["status"] = "writing_introduction"
@@ -205,12 +206,15 @@ class ResearchManager:
                 task["introduction"] = event["generate_introduction"]["introduction"]
             if "all_urls" in event["generate_introduction"]:
                 task["all_urls"] = event["generate_introduction"]["all_urls"]
+            task["progress"] = 0.2
 
         elif "human_feedback" in event:
             task["status"] = "processing_sections"
+            task["progress"] = 0.3
 
         elif "build_section_with_research" in event:
             task["status"] = "researching_sections"
+            task["progress"] = 0.4
 
             if "completed_sections" in event["build_section_with_research"]:
                 # 完了したセクションを追加
@@ -227,7 +231,7 @@ class ResearchManager:
                 # 進捗率を更新
                 total_sections = len(task["sections"]) if task["sections"] else 1
                 completed = len(task["completed_sections"])
-                task["progress"] = min(0.9, completed / total_sections) if total_sections > 0 else 0
+                task["progress"] = min(0.8, completed / total_sections) if total_sections > 0 else 0
 
             if "all_urls" in event["build_section_with_research"]:
                 # URLを追加（重複は追って対処する）
@@ -237,11 +241,13 @@ class ResearchManager:
 
         elif "gather_completed_sections" in event:
             task["status"] = "collecting_sections"
+            task["progress"] = 0.8
 
         elif "generate_conclusion" in event:
             task["status"] = "generating_conclusion"
             if "conclusion" in event["generate_conclusion"]:
                 task["conclusion"] = event["generate_conclusion"]["conclusion"]
+            task["progress"] = 0.9
 
         elif "compile_final_report" in event:
             if "final_report" in event["compile_final_report"]:
