@@ -119,6 +119,7 @@ class ResearchManager:
 
         # フィードバック待ち状態を解除
         task["waiting_for_feedback"] = False
+        # フィードバック処理中のステータスに変更
         task["status"] = "processing_feedback"
 
         # 状態変更をデータベースに保存
@@ -129,13 +130,15 @@ class ResearchManager:
 
         return True
 
+        return True
+
     async def _continue_research(self, research_id: str, feedback: str | None):
         """フィードバック後にリサーチを続行"""
         task = self.research_tasks[research_id]
         thread = task["thread"]
 
         try:
-            task["status"] = "executing"
+            task["status"] = "processing_feedback"
             # 状態変更をデータベースに保存
             self.research_service.save_research(task)
 
@@ -146,14 +149,27 @@ class ResearchManager:
             else:
                 # フィードバックが提供された場合はそれを送信してプランを更新
                 command = Command(resume=feedback)
+                print(f"Processing feedback: {feedback[:100]}...")
 
             # リサーチを継続
             async for event in self.graph.astream(command, thread, stream_mode="updates"):
                 print(f"Continue event for {research_id}: {event.keys()}")
+
+                # イベントを処理する前に human_feedback イベントの内容をより詳細に出力
+                if "human_feedback" in event:
+                    print(f"Human feedback event details: {type(event['human_feedback'])}")
+                    if isinstance(event["human_feedback"], dict):
+                        print(f"  Keys: {event['human_feedback'].keys()}")
+
                 await self._process_event(research_id, event)
 
                 # 変更をデータベースに保存
                 self.research_service.save_research(task)
+
+                # フィードバック待ち状態になった場合はループを中断
+                if task.get("waiting_for_feedback", False) and task["status"] == "waiting_for_feedback":
+                    print(f"Pausing research {research_id} for feedback")
+                    break
 
         except Exception as e:
             # エラー情報を保存
@@ -193,6 +209,42 @@ class ResearchManager:
                 else:
                     task["status"] = "executing"
 
+        elif "human_feedback" in event:
+            # human_feedback が辞書かどうかをチェック
+            if isinstance(event["human_feedback"], dict):
+                # フィードバック後に更新されたプランがある場合
+                if "updated_plan" in event["human_feedback"]:
+                    # 更新されたプランがあれば、再度フィードバック待ち状態に
+                    updated_plan = event["human_feedback"]["updated_plan"]
+                    if updated_plan and isinstance(updated_plan, dict) and "sections" in updated_plan:
+                        # セクションリストを更新
+                        sections = updated_plan["sections"]
+                        task["sections"] = [
+                            {
+                                "name": s.get("name", ""),
+                                "description": s.get("description", ""),
+                                "content": s.get("content", ""),
+                                "search_options": s.get("search_options", []),
+                            }
+                            for s in sections
+                        ]
+                        # 再度フィードバックを待つ
+                        task["waiting_for_feedback"] = True
+                        task["status"] = "waiting_for_feedback"
+                    else:
+                        # 更新されたプランがなければ実行に進む
+                        task["status"] = "executing"
+                else:
+                    # フィードバックが処理されたが、プランの更新がない場合は実行に進む
+                    task["status"] = "processing_sections"
+                    task["progress"] = 0.3
+            else:
+                # human_feedback が辞書でない場合（None等）は実行に進む
+                print("Human feedback event is not a dictionary, continuing execution")
+                task["status"] = "processing_sections"
+                task["progress"] = 0.3
+
+        # 残りの既存コードはそのまま維持
         elif "setup_local_documents" in event:
             task["status"] = "initializing_documents"
 
@@ -207,10 +259,6 @@ class ResearchManager:
             if "all_urls" in event["generate_introduction"]:
                 task["all_urls"] = event["generate_introduction"]["all_urls"]
             task["progress"] = 0.2
-
-        elif "human_feedback" in event:
-            task["status"] = "processing_sections"
-            task["progress"] = 0.3
 
         elif "build_section_with_research" in event:
             task["status"] = "researching_sections"
@@ -353,7 +401,12 @@ class ResearchManager:
         sections = []
         if task.get("sections"):
             sections = [
-                SectionModel(name=s["name"], description=s["description"], content=s.get("content", ""), search_options=s.get("search_options"))
+                SectionModel(
+                    name=s["name"],
+                    description=s["description"],
+                    content=s.get("content", ""),
+                    search_options=s.get("search_options"),
+                )
                 for s in task["sections"]
             ]
 
@@ -385,7 +438,12 @@ class ResearchManager:
         sections = []
         if task.get("sections"):
             sections = [
-                SectionModel(name=s["name"], description=s["description"], content=s.get("content", ""), search_options=s.get("search_options"))
+                SectionModel(
+                    name=s["name"],
+                    description=s["description"],
+                    content=s.get("content", ""),
+                    search_options=s.get("search_options"),
+                )
                 for s in task["sections"]
             ]
 
