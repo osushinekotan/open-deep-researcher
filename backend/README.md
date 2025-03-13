@@ -19,3 +19,9 @@ uv pip install -r requirements.txt
 # Start up FastAPI
 uvicorn app.main:app --reload
 ```
+
+## Create Admin
+
+```bash
+python create_admin.py admin admin@example.com password123
+```
