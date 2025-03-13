@@ -1,15 +1,14 @@
+import os
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
 
 from app.db.models import User, get_db_context
-from app.models.user import UserCreate, UserResponse, TokenResponse
-import os
+from app.models.user import TokenResponse, UserCreate, UserResponse
+
 # JWT設定
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
@@ -43,7 +42,7 @@ def authenticate_user(username: str, password: str):
         return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """アクセストークンを生成"""
     to_encode = data.copy()
     if expires_delta:
@@ -138,9 +137,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import documents, feedback, research, auth, users
+from app.api.endpoints import auth, documents, feedback, research, users
 
 app = FastAPI(
     title="Open Deep Researcher API",
