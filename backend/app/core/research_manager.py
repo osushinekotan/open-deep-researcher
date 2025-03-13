@@ -333,6 +333,7 @@ class ResearchManager:
             "report_structure": DEFAULT_REPORT_STRUCTURE,
             "number_of_queries": 2,
             "max_reflection": 2,
+            "request_delay": 0.0,
             # 単語数制限
             "max_section_words": 1000,
             "max_subsection_words": 500,
@@ -363,6 +364,12 @@ class ResearchManager:
                 "local_document_path": str(DOCUMENTS_DIR),
                 "embedding_provider": "openai",
                 "embedding_model": "text-embedding-3-small",
+            },
+            "google_patent_search_config": {
+                "db_path": "data/patent_database.sqlite",
+                "limit": 10,
+                "query_expansion": True,
+                "initial_document_limit": 1000,
             },
             # 言語設定
             "language": "japanese",

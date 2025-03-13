@@ -3,6 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.config import DOCUMENTS_DIR, FTS_DATABASE, VECTOR_STORE_DIR
+
 DEFAULT_REPORT_STRUCTURE = """Use this structure to create a report on the user-provided topic:
 Main Body Sections:
    - Each section should focus on a sub-topic of the user-provided topic
@@ -37,6 +39,7 @@ class ResearchConfig(BaseModel):
     report_structure: str | None = DEFAULT_REPORT_STRUCTURE
     number_of_queries: int = 2
     max_reflection: int = 2
+    request_delay: float = 0.0
 
     # 単語数制限
     max_section_words: int = 1000
@@ -54,15 +57,15 @@ class ResearchConfig(BaseModel):
 
     # モデル設定
     planner_provider: PlannerProviderEnum = PlannerProviderEnum.OPENAI
-    planner_model: str = "gpt-4o"
+    planner_model: str = "gpt-4o-mini"
     planner_model_config: dict[str, Any] | None = None
 
     writer_provider: WriterProviderEnum = WriterProviderEnum.OPENAI
-    writer_model: str = "gpt-4o"
+    writer_model: str = "gpt-4o-mini"
     writer_model_config: dict[str, Any] | None = None
 
     conclusion_writer_provider: WriterProviderEnum = WriterProviderEnum.OPENAI
-    conclusion_writer_model: str = "o3-mini"
+    conclusion_writer_model: str = "gpt-4o-mini"
     conclusion_writer_model_config: dict[str, Any] | None = None
 
     # 検索プロバイダー設定
@@ -76,10 +79,26 @@ class ResearchConfig(BaseModel):
     max_tokens_per_source: int = 8192
 
     # 検索プロバイダー別の設定
-    tavily_search_config: dict[str, Any] | None = None
-    arxiv_search_config: dict[str, Any] | None = None
-    local_search_config: dict[str, Any] | None = None
-    google_patent_search_config: dict[str, Any] | None = None
+    tavily_search_config: dict[str, Any] | None = {
+        "max_results": 5,
+        "include_raw_content": False,
+    }
+    arxiv_search_config: dict[str, Any] | None = {
+        "load_max_docs": 5,
+        "get_full_documents": True,
+    }
+    local_search_config: dict[str, Any] | None = {
+        "vector_store_path": str(VECTOR_STORE_DIR),
+        "local_document_path": str(DOCUMENTS_DIR),
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-small",
+    }
+    google_patent_search_config: dict[str, Any] | None = {
+        "db_path": str(FTS_DATABASE),
+        "limit": 10,
+        "query_expansion": True,
+        "initial_document_limit": 1000,
+    }
 
     # 言語設定
     language: str = "japanese"
@@ -101,8 +120,7 @@ class SectionModel(BaseModel):
     name: str
     description: str
     content: str | None = None
-    search_options: list | None = None 
-
+    search_options: list | None = None
 
 
 class PlanResponse(BaseModel):
