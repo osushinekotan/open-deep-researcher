@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -105,6 +106,7 @@ async def register_user(user_data: UserCreate):
         # 新規ユーザーを作成
         hashed_password = get_password_hash(user_data.password)
         db_user = User(
+            id=str(uuid.uuid4()),
             username=user_data.username,
             email=user_data.email,
             hashed_password=hashed_password,
