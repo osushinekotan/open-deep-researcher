@@ -7,30 +7,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { SectionModel } from "@/types/api";
-import { Check, Search } from "lucide-react";
+import { Search, SendIcon } from "lucide-react";
 import { useSubmitFeedback } from "@/hooks/use-feedback";
 import { useResearchStatus } from "@/hooks/use-research";
 
 interface FeedbackFormProps {
   researchId: string;
   sections: SectionModel[];
+  onFeedbackSubmitted: () => void;
 }
 
-export function FeedbackForm({ researchId, sections }: FeedbackFormProps) {
+export function FeedbackForm({ researchId, sections, onFeedbackSubmitted }: FeedbackFormProps) {
   const [feedback, setFeedback] = useState("");
   const router = useRouter();
   
   const { data: research } = useResearchStatus(researchId);
   const { mutate: submitFeedback, isPending } = useSubmitFeedback(researchId);
 
-  const handleSubmit = (approve: boolean) => {
-    // 承認の場合は空の文字列を送信
-    const feedbackText = approve ? undefined : feedback;
-    
-    submitFeedback(feedbackText, {
+  const handleSubmit = () => {
+    // フィードバックテキスト（空文字列の場合も送信可能）
+    submitFeedback(feedback, {
       onSuccess: () => {
-        // 成功したらリサーチ詳細ページに戻る
-        router.push(`/research/${researchId}`);
+        // 空のフィードバックの場合はリサーチ詳細ページに戻る
+        if (!feedback.trim()) {
+          router.push(`/research/${researchId}`);
+        } else {
+          // フィードバックがある場合は親コンポーネントに通知して待機状態にする
+          onFeedbackSubmitted();
+        }
       },
     });
   };
@@ -97,12 +101,12 @@ export function FeedbackForm({ researchId, sections }: FeedbackFormProps) {
           キャンセル
         </Button>
         <Button 
-          className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
-          onClick={() => handleSubmit(true)}
+          className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1"
+          onClick={() => handleSubmit()}
           disabled={isPending}
         >
-          <Check size={16} />
-          <span>プランを承認</span>
+          <SendIcon size={16} />
+          <span>{!feedback.trim() ? "プランを承認" : "フィードバックを送信"}</span>
         </Button>
       </div>
     </div>

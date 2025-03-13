@@ -1,40 +1,115 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ThumbsUp } from "lucide-react";
+import { ArrowLeft, ThumbsUp, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useResearchStatus, useResearchPlan } from "@/hooks/use-research";
 import { FeedbackForm } from "@/components/forms/feedback-form";
 import { sampleResearchPlan } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { researchService } from "@/services/research-service";
 
 export function FeedbackClient({ researchId }: { researchId: string }) {
   const router = useRouter();
+  const [waitingForUpdatedPlan, setWaitingForUpdatedPlan] = useState(false);
+  // 元のプランのセクション内容を保持する参照
+  const originalPlanRef = useRef<string | null>(null);
+  // 新しいプランが検出されたかのフラグ
+  const [newPlanDetected, setNewPlanDetected] = useState(false);
   
   const { 
     data: research, 
     isLoading: statusLoading, 
-    error: statusError 
+    error: statusError,
+    refetch: refetchStatus 
   } = useResearchStatus(researchId);
   
   const { 
     data: plan, 
     isLoading: planLoading, 
-    error: planError 
-  } = useResearchPlan(researchId);
+    error: planError,
+    refetch: refetchPlan 
+  } = useQuery({
+    queryKey: ['research', researchId, 'plan'],
+    queryFn: () => researchService.getResearchPlan(researchId),
+    refetchInterval: waitingForUpdatedPlan && !newPlanDetected ? 5000 : false,
+    retry: false,
+    onError: () => {},
+  });
 
   const isLoading = statusLoading || planLoading;
   const error = statusError || planError;
   
-  // useEffectを使用してリダイレクトの処理を行う
+  // フィードバック送信後のハンドラー
+  const handleFeedbackSubmitted = () => {
+    // オリジナルのプラン内容を保存
+    if (plan && plan.sections) {
+      // 簡易的なハッシュとしてセクション名と説明をJSONにして保存
+      const planHash = JSON.stringify(plan.sections.map(s => ({ name: s.name, description: s.description })));
+      originalPlanRef.current = planHash;
+      console.log("元のプラン内容を保存:", planHash);
+    }
+    
+    setWaitingForUpdatedPlan(true);
+    setNewPlanDetected(false);
+  };
+
+  // 新しいプランを検出する
   useEffect(() => {
-    if (research && research.status !== 'waiting_for_feedback') {
+    if (!waitingForUpdatedPlan || !plan || !plan.sections || !originalPlanRef.current) return;
+    
+    // 現在のプランのハッシュを計算
+    const currentPlanHash = JSON.stringify(plan.sections.map(s => ({ name: s.name, description: s.description })));
+    
+    // 元のプランと比較して変更があれば新プラン検出とする
+    if (currentPlanHash !== originalPlanRef.current) {
+      console.log("新しいプランを検出しました");
+      setNewPlanDetected(true);
+    }
+  }, [plan, waitingForUpdatedPlan]);
+
+  // 状態監視とリダイレクト処理
+  useEffect(() => {
+    if (!research) return;
+    
+    // フィードバック提出後の処理フロー
+    if (waitingForUpdatedPlan) {
+      // 新しいプランが検出された、かつフィードバック待ち状態の場合
+      if (newPlanDetected && research.status === 'waiting_for_feedback') {
+        console.log("更新されたプランが準備できました。フィードバック画面を再表示します。");
+        setWaitingForUpdatedPlan(false);
+        originalPlanRef.current = null;
+        setNewPlanDetected(false);
+      }
+      // 完了、エラーなど最終状態に達した場合はステータス画面にリダイレクト
+      else if (['completed', 'error'].includes(research.status)) {
+        console.log("リサーチが完了かエラー状態になりました。ステータス画面に戻ります。");
+        router.push(`/research/${researchId}`);
+      }
+      // それ以外の状態では処理を継続
+    } 
+    // 初期表示時のチェック（フィードバック待ち状態以外ならリダイレクト）
+    else if (!waitingForUpdatedPlan && research.status !== 'waiting_for_feedback') {
       router.push(`/research/${researchId}`);
     }
-  }, [research, router, researchId]);
+  }, [research, researchId, router, waitingForUpdatedPlan, newPlanDetected]);
+
+  // 定期的なポーリング設定
+  useEffect(() => {
+    if (!waitingForUpdatedPlan) return;
+    
+    const intervalId = setInterval(() => {
+      console.log("ステータスとプランをポーリング中...");
+      refetchStatus();
+      refetchPlan();
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [waitingForUpdatedPlan, refetchStatus, refetchPlan]);
 
   // 作成日（ダミー）
   const createdAt = new Date().toISOString();
@@ -52,6 +127,29 @@ export function FeedbackClient({ researchId }: { researchId: string }) {
           <Button variant="outline" onClick={() => router.push('/dashboard')}>
             ダッシュボードに戻る
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 更新されたプランを待機中の表示
+  if (waitingForUpdatedPlan) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
+        <div className="flex items-center gap-2 text-gray-600 mb-6 hover:text-gray-800 transition-colors">
+          <Link href={`/research/${researchId}`} className="flex items-center gap-2">
+            <ArrowLeft size={16} />
+            <span>リサーチ詳細に戻る</span>
+          </Link>
+        </div>
+        
+        <div className="text-center py-16">
+          <Loader2 className="h-16 w-16 animate-spin mx-auto mb-6 text-blue-600" />
+          <h2 className="text-2xl font-bold mb-4">フィードバックを処理中...</h2>
+          <p className="text-gray-600 mb-6">
+            リサーチプランを更新しています。このプロセスには数分かかる場合があります。
+            <br />更新が完了すると自動的に新しいプランが表示されます。
+          </p>
         </div>
       </div>
     );
@@ -111,7 +209,11 @@ export function FeedbackClient({ researchId }: { researchId: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FeedbackForm researchId={researchId} sections={sections} />
+          <FeedbackForm 
+            researchId={researchId} 
+            sections={sections} 
+            onFeedbackSubmitted={handleFeedbackSubmitted} 
+          />
         </CardContent>
       </Card>
     </div>
