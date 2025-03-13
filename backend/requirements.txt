@@ -1,9 +1,11 @@
 fastapi
 uvicorn
 sqlalchemy
-pydantic
 python-multipart
 aiofiles
 google-cloud-bigquery
 sqlalchemy
 -e ..
+python-jose[cryptography]
+passlib[bcrypt]
+pydantic[email]
