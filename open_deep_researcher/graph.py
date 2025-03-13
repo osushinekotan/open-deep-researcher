@@ -1,3 +1,4 @@
+import asyncio
 from typing import Literal
 
 from langchain.chat_models import init_chat_model
@@ -97,10 +98,9 @@ async def setup_patent_db(state: ReportState, config: RunnableConfig):
     """
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    available_providers = [provider.value for provider in configurable.available_search_providers]
 
     # Skip if Google Patent is not available
-    if "google_patent" not in available_providers:
+    if "google_patent" not in configurable.available_search_providers:
         return {"patent_db_ready": False}
 
     topic = state["topic"]
@@ -113,12 +113,14 @@ async def setup_patent_db(state: ReportState, config: RunnableConfig):
     planner_provider = get_config_value(configurable.planner_provider)
     planner_model = get_config_value(configurable.planner_model)
     planner_model_config = configurable.planner_model_config or {}
+    initial_document_limit = patent_config.get("initial_document_limit", 1000)
     success = await initialize_patent_database(
         topic=topic,
         db_path=db_path,
         llm_provider=planner_provider,
         llm_model=planner_model,
         llm_model_config=planner_model_config,
+        max_results=initial_document_limit,
     )
 
     return {"patent_db_ready": success}
@@ -127,8 +129,12 @@ async def setup_patent_db(state: ReportState, config: RunnableConfig):
 async def setup_local_documents(state: ReportState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    local_config = configurable.local_search_config or {}
 
+    # Skip if local document provider is not available
+    if "local" not in configurable.available_search_providers:
+        return {"local_documents_ready": False}
+
+    local_config = configurable.local_search_config or {}
     local_document_path = local_config.get("local_document_path", None)
 
     # Skip if local documents are not provided
@@ -513,7 +519,7 @@ def generate_queries(state: SectionState, config: RunnableConfig):
     return {"search_queries_by_provider": search_queries_by_provider}
 
 
-async def search(state: SectionState, config: RunnableConfig):
+async def search(state: SectionState, config: RunnableConfig):  # noqa: C901
     """各プロバイダで検索を実行し、結果を統合する"""
     # Get state
     search_queries_by_provider = state["search_queries_by_provider"]
@@ -523,6 +529,10 @@ async def search(state: SectionState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     max_tokens_per_source = configurable.max_tokens_per_source
+    request_delay = getattr(configurable, "request_delay", 0.0)
+    if request_delay > 0:
+        print(f"Applying request delay of {request_delay} seconds...")
+        await asyncio.sleep(request_delay)
 
     # 各プロバイダごとに検索実行
     search_results_by_provider = {}
@@ -603,7 +613,7 @@ async def search(state: SectionState, config: RunnableConfig):
     }
 
 
-def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search"]]:
+async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search"]]:
     """Write a section of the report and evaluate if more research is needed.
 
     This node:
@@ -628,6 +638,10 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
+    request_delay = getattr(configurable, "request_delay", 0.0)
+    if request_delay > 0:
+        print(f"Applying request delay of {request_delay} seconds...")
+        await asyncio.sleep(request_delay)
 
     # Format system instructions
     section_writer_inputs_formatted = section_writer_inputs.format(
@@ -904,6 +918,10 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     queries_by_subtopic = state["deep_research_queries"]
+    request_delay = getattr(configurable, "request_delay", 0.0)
+    if request_delay > 0:
+        print(f"Applying request delay of {request_delay} seconds...")
+        await asyncio.sleep(request_delay)
 
     # セクションの検索オプションを取得（ここでは深掘り検索用のプロバイダを定義可能）
     # 深掘り検索用に特定のプロバイダを使用するか、セクションの既存オプションを使用

@@ -44,6 +44,8 @@ class Configuration:
     max_reflection: int = 2  # Maximum number of reflection + search iterations
     max_sections: int = 3  # Maximum number of sections in the report
 
+    request_delay: float = 0.0  # Delay between requests to the same provider
+
     max_section_words: int = 10000  # セクション（main body）の最大単語数
     max_subsection_words: int = 10000  # サブセクションの最大単語数
     max_introduction_words: int = 10000  # イントロダクションの最大単語数
@@ -128,6 +130,7 @@ class Configuration:
             "db_path": "data/patent_database.sqlite",
             "limit": 10,
             "query_expansion": True,
+            "initial_document_limit": 1000,  # 初期 DB に格納するドキュメント数
         }
     )
 
