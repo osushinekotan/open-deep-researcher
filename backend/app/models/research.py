@@ -39,6 +39,7 @@ class ResearchConfig(BaseModel):
     report_structure: str | None = DEFAULT_REPORT_STRUCTURE
     number_of_queries: int = 2
     max_reflection: int = 2
+    max_sections: int = 3
     request_delay: float = 0.0
 
     # 単語数制限

@@ -333,6 +333,7 @@ class ResearchManager:
             "report_structure": DEFAULT_REPORT_STRUCTURE,
             "number_of_queries": 2,
             "max_reflection": 2,
+            "max_sections": 3,
             "request_delay": 0.0,
             # 単語数制限
             "max_section_words": 1000,
