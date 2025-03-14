@@ -85,13 +85,13 @@ export default function HomePage() {
       </div>
 
       <div className="mt-12 text-center">
-        <h2 className="text-2xl font-bold mb-4">深いリサーチを、より速く</h2>
+        <h2 className="text-2xl font-bold mb-4">より深く、より速いリサーチ</h2>
         <p className="text-gray-600 max-w-3xl mx-auto mb-6">
           Open Deep Researcherは、複数のAIモデルと検索エンジンを組み合わせ、学術論文から特許情報まで幅広い情報源から高品質なリサーチレポートを生成します。
         </p>
         <Link href="/new-research">
           <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-            さっそく始める
+            Start your research
           </Button>
         </Link>
       </div>
