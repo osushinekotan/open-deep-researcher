@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
@@ -376,11 +377,20 @@ class ResearchManager:
             "language": "japanese",
         }
 
+        def _deep_update(original, updates):
+            """辞書を再帰的に更新し、None の値は無視する"""
+            for key, value in updates.items():
+                if isinstance(value, Mapping) and isinstance(original.get(key), Mapping):
+                    # 両方が辞書の場合は再帰的に更新
+                    original[key] = _deep_update(original.get(key, {}), value)
+                elif value is not None:
+                    original[key] = value
+            return original
+
         # ユーザー設定で上書き
         if config:
             user_config = config.dict()
-            # 設定を更新
-            configurable.update(user_config)
+            configurable = _deep_update(configurable, user_config)
 
         return configurable
 
