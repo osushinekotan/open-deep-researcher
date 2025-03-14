@@ -8,7 +8,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="font-semibold text-xl flex items-center">
+          <Link href="/home" className="font-semibold text-xl flex items-center">
             <span className="text-blue-600 mr-1">Open</span>
             <span className="text-gray-900">Deep Researcher</span>
           </Link>

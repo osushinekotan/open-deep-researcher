@@ -2,5 +2,5 @@ import { redirect } from 'next/navigation';
 
 export default function Home() {
   // ダッシュボードページにリダイレクト
-  redirect('/dashboard');
+  redirect('/home');
 }

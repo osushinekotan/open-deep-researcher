@@ -556,7 +556,7 @@ export function ResearchForm() {
                     <div className="flex items-center gap-2 text-base font-medium">
                       <BookOpen size={16} /> 
                       <span>結論ライターモデル設定</span>
-                      <InfoTooltip content="結論を生成するためのAIモデルを設定します。結論はレポート全体をまとめる重要なセクションですが、軽量モデルでも実行可能です。">
+                      <InfoTooltip content="結論を生成するためのAIモデルを設定します。結論はレポート全体をまとめる重要なセクションです。また、ユーザーの質問に対する最終的な回答を行います">
                         <span></span>
                       </InfoTooltip>
                     </div>

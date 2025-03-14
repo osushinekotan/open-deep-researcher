@@ -3,17 +3,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, Home, BookOpen } from "lucide-react";
 
 export function MainNav() {
   const pathname = usePathname();
   
   const navItems = [
     {
+      href: "/home",
+      label: "ホーム",
+      icon: <Home size={16} />,
+      active: pathname === "/home",
+    },
+    {
       href: "/dashboard",
-      label: "Dashboard",
+      label: "ダッシュボード",
       icon: <LayoutDashboard size={16} />,
       active: pathname === "/dashboard" || pathname === "/",
+    },
+    {
+      href: "/guide",
+      label: "使い方",
+      icon: <BookOpen size={16} />,
+      active: pathname === "/guide",
     },
   ];
 
