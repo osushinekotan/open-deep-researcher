@@ -1,3 +1,5 @@
+## Local
+
 ```bash
 # Change directory to backend
 cd backend
@@ -9,15 +11,17 @@ cp .env.example .env
 ```bash
 # Install uv package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh
+uv venv
+
+# Activate venv
+source .venv/bin/activate
 
 # Install dependencies
 uv pip install -r requirements.txt
-
-# Activate venv
-. .venv/bin/activate
+uv pip install --editable ../
 
 # Start up FastAPI
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 ```
 
 ## Create Admin
