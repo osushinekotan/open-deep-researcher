@@ -7,11 +7,8 @@ Ensure you have API keys set for your desired tools.
 Select a web search tool (by default Open Deep Research uses Tavily):
 
 - [Tavily API](https://tavily.com/) - General web search
-- [Perplexity API](https://www.perplexity.ai/hub/blog/introducing-the-sonar-pro-api) - General web search
-- [Exa API](https://exa.ai/) - Powerful neural search for web content
 - [ArXiv](https://arxiv.org/) - Academic papers in physics, mathematics, computer science, and more
 - [PubMed](https://pubmed.ncbi.nlm.nih.gov/) - Biomedical literature from MEDLINE, life science journals, and online books
-- [Linkup API](https://www.linkup.so/) - General web search
 
 ### Running LangGraph Studio UI locally
 
@@ -52,3 +49,12 @@ Use this to open the Studio UI:
 - 🎨 Studio UI: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 - 📚 API Docs: http://127.0.0.1:2024/docs
 ```
+
+### Running Web App Locally with Docker
+
+```bash
+docker compose up --build
+```
+
+- backend: `FastAPI`
+- frontend: `Next.js`
