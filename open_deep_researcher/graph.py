@@ -1042,9 +1042,9 @@ section_builder.add_edge("generate_queries", "search")
 section_builder.add_edge("search", "write_section")
 
 
-def should_deep_research(state: SectionState) -> str:
+def should_deep_research(state: SectionState, config: RunnableConfig) -> str:
     """深掘り調査を行うかどうかを決定する関数"""
-    configurable = Configuration.from_runnable_config(state.get("config", {}))
+    configurable = Configuration.from_runnable_config(config)
     if getattr(configurable, "enable_deep_research", False):
         return "deep_research_planner"
     return END

@@ -42,7 +42,7 @@ class Configuration:
     report_structure: str = DEFAULT_REPORT_STRUCTURE  # Defaults to the default report structure
     number_of_queries: int = 1  # Number of search queries to generate per iteration
     max_reflection: int = 2  # Maximum number of reflection + search iterations
-    max_sections: int = 3  # Maximum number of sections in the report
+    max_sections: int = 5  # Maximum number of sections in the report
 
     request_delay: float = 0.0  # Delay between requests to the same provider
 
@@ -138,9 +138,11 @@ class Configuration:
 
     @classmethod
     def from_runnable_config(cls, config: RunnableConfig | None = None) -> "Configuration":
-        """Create a Configuration instance from a RunnableConfig."""
         configurable = config["configurable"] if config and "configurable" in config else {}
         values: dict[str, Any] = {
-            f.name: os.environ.get(f.name.upper(), configurable.get(f.name)) for f in fields(cls) if f.init
+            f.name: os.environ.get(f.name.upper(), configurable.get(f.name))
+            for f in fields(cls)
+            if f.init and (f.name in configurable or f.name.upper() in os.environ)
         }
-        return cls(**{k: v for k, v in values.items() if v})
+        cfg = cls(**values)
+        return cfg

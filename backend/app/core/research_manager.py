@@ -377,7 +377,7 @@ class ResearchManager:
 
         # ユーザー設定で上書き
         if config:
-            user_config = config.dict(exclude_unset=True)
+            user_config = config.dict()
             # 設定を更新
             configurable.update(user_config)
 
