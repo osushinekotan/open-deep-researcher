@@ -378,15 +378,6 @@ class ResearchManager:
         # ユーザー設定で上書き
         if config:
             user_config = config.dict(exclude_unset=True)
-
-            # 列挙型を string 値に変換
-            if "search_source" in user_config and user_config["search_source"]:
-                user_config["search_source"] = user_config["search_source"].value
-
-            for key in ["planner_provider", "writer_provider", "conclusion_writer_provider"]:
-                if key in user_config and user_config[key]:
-                    user_config[key] = user_config[key].value
-
             # 設定を更新
             configurable.update(user_config)
 
