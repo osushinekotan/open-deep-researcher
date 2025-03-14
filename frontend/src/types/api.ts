@@ -98,6 +98,7 @@ export interface ResearchConfig {
   report_structure?: string;
   number_of_queries?: number;
   max_reflection?: number;
+  max_sections?: number;
   request_delay?: number;
   max_section_words?: number;
   max_subsection_words?: number;

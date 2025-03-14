@@ -324,6 +324,26 @@ export function ResearchForm() {
                 <InfoTooltip content="レポートの各セクションの最大単語数を設定します。長すぎると読みにくくなりますが、短すぎると情報が不足する可能性があります。">
                   <Label className="text-base font-medium">単語数制限</Label>
                 </InfoTooltip>
+                {/* セクション最大数を追加 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3 md:col-span-2">
+                    <Label className="text-sm">セクション最大数</Label>
+                    <div className="flex items-center gap-4">
+                      <Slider 
+                        defaultValue={[config.max_sections || 5]} 
+                        min={2} 
+                        max={10} 
+                        step={1} 
+                        className="flex-1"
+                        onValueChange={(values) => updateConfig({ max_sections: values[0] })}
+                        disabled={isPending}
+                      />
+                      <span className="text-sm font-medium w-12 text-right">{config.max_sections || 5}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">レポートに含めるセクションの最大数</p>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label className="text-sm">セクション最大単語数</Label>
@@ -429,8 +449,8 @@ export function ResearchForm() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={PlannerProviderEnum.OPENAI}>OpenAI</SelectItem>
-                            <SelectItem value={PlannerProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
-                            <SelectItem value={PlannerProviderEnum.GROQ}>Groq</SelectItem>
+                            {/* <SelectItem value={PlannerProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
+                            <SelectItem value={PlannerProviderEnum.GROQ}>Groq</SelectItem> */}
                           </SelectContent>
                         </Select>
                       </div>
@@ -502,8 +522,8 @@ export function ResearchForm() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={WriterProviderEnum.OPENAI}>OpenAI</SelectItem>
-                            <SelectItem value={WriterProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
-                            <SelectItem value={WriterProviderEnum.GROQ}>Groq</SelectItem>
+                            {/* <SelectItem value={WriterProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
+                            <SelectItem value={WriterProviderEnum.GROQ}>Groq</SelectItem> */}
                           </SelectContent>
                         </Select>
                       </div>
@@ -575,8 +595,8 @@ export function ResearchForm() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={WriterProviderEnum.OPENAI}>OpenAI</SelectItem>
-                            <SelectItem value={WriterProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
-                            <SelectItem value={WriterProviderEnum.GROQ}>Groq</SelectItem>
+                            {/* <SelectItem value={WriterProviderEnum.ANTHROPIC}>Anthropic</SelectItem>
+                            <SelectItem value={WriterProviderEnum.GROQ}>Groq</SelectItem> */}
                           </SelectContent>
                         </Select>
                       </div>

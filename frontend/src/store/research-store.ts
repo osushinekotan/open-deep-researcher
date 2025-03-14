@@ -18,6 +18,7 @@ const defaultConfig: ResearchConfig = {
   report_structure: undefined,
   number_of_queries: 2,
   max_reflection: 2,
+  max_sections: 5,
   request_delay: 1.0,
   
   // 単語数制限
