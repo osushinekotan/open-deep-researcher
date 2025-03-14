@@ -23,9 +23,3 @@ uv pip install --editable ../
 # Start up FastAPI
 uv run uvicorn app.main:app --reload
 ```
-
-## Create Admin
-
-```bash
-python create_admin.py admin admin@example.com password123
-```
