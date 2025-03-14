@@ -83,7 +83,9 @@ export interface PubmedSearchConfig {
 
 // Google Patentの検索設定インターフェース
 export interface GooglePatentSearchConfig {
-  max_results: number;
+  limit: number;
+  query_expansion: boolean;
+  initial_document_limit: number;
 }
 
 // ローカル検索の設定インターフェース
@@ -96,6 +98,7 @@ export interface ResearchConfig {
   report_structure?: string;
   number_of_queries?: number;
   max_reflection?: number;
+  request_delay?: number;
   max_section_words?: number;
   max_subsection_words?: number;
   max_introduction_words?: number;

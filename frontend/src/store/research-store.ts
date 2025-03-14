@@ -18,6 +18,7 @@ const defaultConfig: ResearchConfig = {
   report_structure: undefined,
   number_of_queries: 2,
   max_reflection: 2,
+  request_delay: 0.0,
   
   // 単語数制限
   max_section_words: 1000,
@@ -76,7 +77,9 @@ const defaultConfig: ResearchConfig = {
     embedding_model: 'text-embedding-3-small',
   },
   google_patent_search_config: {
-    max_results: 5,
+    limit: 5,
+    query_expansion: true,
+    initial_document_limit: 1000,
   },
   
   // 言語設定

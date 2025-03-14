@@ -224,7 +224,6 @@ export function ResearchForm() {
                     </RadioGroup>
                   </div>
                 </div>
-                
                 {/* Deep Researchと認証設定 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
@@ -853,7 +852,6 @@ export function ResearchForm() {
                           </div>
                         </div>
                       )}
-
                       {/* Google Patent設定 */}
                       {config.available_search_providers.includes(SearchProviderEnum.GOOGLE_PATENT) && (
                         <div className="rounded-lg p-4 space-y-3">
@@ -861,31 +859,86 @@ export function ResearchForm() {
                             <Database size={14} />
                             Google Patent 設定
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor="patent_max_results" className="text-sm">最大取得特許数</Label>
+                          <div className="space-y-4">
+                            {/* 最大取得特許数 と 初期ドキュメント制限 */}
+                            <div className="space-y-2">
+                              {/* 最大取得特許数 */}
+                              <Label className="text-sm">最大取得特許数</Label>
                               <div className="flex items-center gap-4">
-                                <Slider 
+                                <Slider
                                   id="patent_max_results"
-                                  defaultValue={[config.google_patent_search_config?.max_results || 5]} 
-                                  min={1} 
-                                  max={10} 
-                                  step={1} 
-                                  className="flex-1"
-                                  onValueChange={(values) => updateConfig({ 
-                                    google_patent_search_config: { 
+                                  defaultValue={[config.google_patent_search_config?.limit || 10]}
+                                  min={1}
+                                  max={20}
+                                  step={1}
+                                  className="flex-1"  // スライダーを横いっぱいに
+                                  onValueChange={(values) => updateConfig({
+                                    google_patent_search_config: {
                                       ...config.google_patent_search_config,
-                                      max_results: values[0] 
-                                    } 
+                                      limit: values[0],
+                                    }
                                   })}
                                   disabled={isPending}
                                 />
-                                <span className="text-sm font-medium w-8 text-right">{config.google_patent_search_config?.max_results || 5}</span>
+                                <span className="text-sm font-medium w-16 text-right">
+                                  {config.google_patent_search_config?.limit || 10}
+                                </span>
                               </div>
+
+                              {/* 初期ドキュメント制限 */}
+                              <Label className="text-sm">初期ドキュメント制限</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider
+                                  id="patent_initial_limit"
+                                  defaultValue={[config.google_patent_search_config?.initial_document_limit || 1000]}
+                                  min={100}
+                                  max={5000}
+                                  step={100}
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({
+                                    google_patent_search_config: {
+                                      ...config.google_patent_search_config,
+                                      initial_document_limit: values[0]
+                                    }
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-16 text-right">
+                                  {config.google_patent_search_config?.initial_document_limit || 1000}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* クエリ拡張スイッチ */}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  id="patent_query_expansion"
+                                  checked={config.google_patent_search_config?.query_expansion ?? true}
+                                  onCheckedChange={(checked) => updateConfig({
+                                    google_patent_search_config: {
+                                      ...config.google_patent_search_config,
+                                      query_expansion: checked
+                                    }
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <Label
+                                  htmlFor="patent_query_expansion"
+                                  className="text-sm font-medium"
+                                >
+                                  クエリ拡張
+                                </Label>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                クエリを拡張して関連する特許を見つけます
+                              </p>
                             </div>
                           </div>
                         </div>
                       )}
+
+
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -1025,6 +1078,25 @@ export function ResearchForm() {
                   <span className="text-sm font-medium w-16 text-right">{config.max_tokens_per_source || 8192}</span>
                 </div>
                 <p className="text-xs text-gray-500">各情報源から抽出する最大トークン数</p>
+              </div>
+              {/* リクエスト遅延設定 - 追加 */}
+              <div className="space-y-3">
+                <InfoTooltip content="連続したAPIリクエスト間の遅延時間（秒）を指定します。APIレート制限に到達するのを防ぐために使用できます。">
+                  <Label className="text-base font-medium">リクエスト遅延（秒）</Label>
+                </InfoTooltip>
+                <div className="flex items-center gap-4">
+                  <Slider 
+                    defaultValue={[config.request_delay || 1]} 
+                    min={0} 
+                    max={5} 
+                    step={0.1} 
+                    className="flex-1"
+                    onValueChange={(values) => updateConfig({ request_delay: values[0] })}
+                    disabled={isPending}
+                  />
+                  <span className="text-sm font-medium w-8 text-right">{config.request_delay || 0}</span>
+                </div>
+                <p className="text-xs text-gray-500">APIリクエスト間の遅延時間（秒）</p>
               </div>
             </CardContent>
           </Card>
