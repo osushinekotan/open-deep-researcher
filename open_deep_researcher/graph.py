@@ -214,11 +214,25 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
     query_list = [query.search_query for query in results.queries]
 
     if introduction_provider == "local":
-        source_str = await local_search(query_list, **provider_config)
+        source_str = await local_search(
+            query_list=query_list,
+            max_tokens_per_source=configurable.max_tokens_per_source,
+            **provider_config,
+        )
     elif introduction_provider == "google_patent":
-        source_str = await patent_search(query_list, **provider_config)
+        source_str = await patent_search(
+            query_list=query_list,
+            max_tokens_per_source=configurable.max_tokens_per_source,
+            **provider_config,
+        )
     else:
-        source_str = await web_search(introduction_provider, query_list, provider_config)
+        source_str = await web_search(
+            search_api=introduction_provider,
+            query_list=query_list,
+            params_to_pass=provider_config,
+            max_tokens_per_source=configurable.max_tokens_per_source,
+            max_images=0,
+        )
 
     # Extract URLs from search results for references
     urls = extract_urls_from_search_results(source_str)
@@ -317,11 +331,25 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     query_list = [query.search_query for query in results.queries]
 
     if planning_provider == "local":
-        source_str = await local_search(query_list, **provider_config)
+        source_str = await local_search(
+            query_list=query_list,
+            max_tokens_per_source=configurable.max_tokens_per_source,
+            **provider_config,
+        )
     elif planning_provider == "google_patent":
-        source_str = await patent_search(query_list, **provider_config)
+        source_str = await patent_search(
+            query_list=query_list,
+            max_tokens_per_source=configurable.max_tokens_per_source,
+            **provider_config,
+        )
     else:
-        source_str = await web_search(planning_provider, query_list, provider_config)
+        source_str = await web_search(
+            search_api=planning_provider,
+            query_list=query_list,
+            params_to_pass=provider_config,
+            max_tokens_per_source=configurable.max_tokens_per_source,
+            max_images=0,
+        )
 
     urls = extract_urls_from_search_results(source_str)
 
@@ -942,11 +970,24 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
 
                 # 適切な検索関数を呼び出す
                 if provider == "local":
-                    result = await local_search(query_list, **provider_config)
+                    result = await local_search(
+                        query_list=query_list,
+                        max_tokens_per_source=configurable.max_tokens_per_source,
+                        **provider_config,
+                    )
                 elif provider == "google_patent":
-                    result = await patent_search(query_list, **provider_config)
+                    result = await patent_search(
+                        query_list=query_list,
+                        max_tokens_per_source=configurable.max_tokens_per_source,
+                        **provider_config,
+                    )
                 else:
-                    result = await web_search(provider, query_list, provider_config)
+                    result = await web_search(
+                        search_api=provider,
+                        query_list=query_list,
+                        params_to_pass=provider_config,
+                        max_tokens_per_source=configurable.max_tokens_per_source,
+                    )
 
                 extracted_urls = extract_urls_from_search_results(result)
                 all_urls.extend(extracted_urls)

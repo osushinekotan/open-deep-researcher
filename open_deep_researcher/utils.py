@@ -7,7 +7,11 @@ from pydantic import BaseModel, Field
 from open_deep_researcher.state import Section
 
 
-def deduplicate_and_format_sources(search_response, max_tokens_per_source, include_raw_content=True):
+def deduplicate_and_format_sources(
+    search_response: list,
+    max_tokens_per_source: int,
+    max_images: int | None = 10,
+) -> str:
     """
     Takes a list of search responses and formats them into a readable string.
     Limits the raw_content to approximately max_tokens_per_source tokens.
@@ -28,9 +32,15 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
         str: Formatted string with deduplicated sources
     """
     # Collect all results
-    sources_list = []
+    sources_list, imgs_list = [], []
     for response in search_response:
         sources_list.extend(response["results"])
+        imgs_list.extend(response["images"])
+
+    # remove no description images
+    imgs_list = [img for img in imgs_list if img["description"] is not None]
+    if max_images is not None:
+        imgs_list = imgs_list[:max_images]  # 関連度順
 
     # Maintain original order while deduplicating by content
     unique_sources = []
@@ -50,19 +60,22 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
         formatted_text += f"Source: {source['title']}\n"
         formatted_text += f"{'-' * 80}\n"  # Subsection separator
         formatted_text += f"URL: {source['url']}\n===\n"
-        formatted_text += f"Most relevant content from source: {source['content']}\n===\n"
-        if include_raw_content:
-            # Using rough estimate of 4 characters per token
+
+        content = source.get("raw_content", None) or source.get("content", "")
+        if content:
             char_limit = max_tokens_per_source * 4
-            # Handle None raw_content
-            raw_content = source.get("raw_content", "")
-            if raw_content is None:
-                raw_content = ""
-                print(f"Warning: No raw_content found for source {source['url']}")
-            if len(raw_content) > char_limit:
-                raw_content = raw_content[:char_limit] + "... [truncated]"
-            formatted_text += f"Full source content limited to {max_tokens_per_source} tokens: {raw_content}\n\n"
-        formatted_text += f"{'=' * 80}\n\n"  # End section separator
+            if len(content) > char_limit:
+                content = content[:char_limit] + "... [truncated]"
+            content = content.replace("\n\n", "\n").strip()
+            formatted_text += f"Most relevant content from source ({max_tokens_per_source} limit): {content}\n"
+
+    # add images if available
+    if len(imgs_list) > 0:
+        formatted_text += f"{'-' * 20}Images{'-' * 20}\n"
+        for image in imgs_list:
+            url, description = image["url"], image["description"]
+            formatted_text += f"- <img src='{url}' alt='{description}'>\n"
+    formatted_text += f"{'=' * 80}\n\n"  # End section separator
 
     return formatted_text.strip()
 
