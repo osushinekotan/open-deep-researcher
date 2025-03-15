@@ -30,7 +30,6 @@ class SearchProvider(str, Enum):
     TAVILY = "tavily"
     ARXIV = "arxiv"
     PUBMED = "pubmed"
-    EXA = "exa"
     LOCAL = "local"
     GOOGLE_PATENT = "google_patent"
 
@@ -44,7 +43,7 @@ class Configuration:
     max_reflection: int = 2  # Maximum number of reflection + search iterations
     max_sections: int = 5  # Maximum number of sections in the report
 
-    request_delay: float = 0.0  # Delay between requests to the same provider
+    request_delay: float = 1.0  # Delay between requests to the same provider
 
     max_section_words: int = 10000  # セクション（main body）の最大単語数
     max_subsection_words: int = 10000  # サブセクションの最大単語数
@@ -83,7 +82,7 @@ class Configuration:
         }
     )
 
-    max_tokens_per_source = 8192  # 検索結果の最大トークン数
+    max_tokens_per_source = 1024  # 検索結果の最大トークン数
     introduction_search_provider: SearchProvider = SearchProvider.TAVILY
     planning_search_provider: SearchProvider = SearchProvider.TAVILY
     # 検索時に利用可能なプロバイダーのリストを指定 (human feedback で確定させる)
@@ -106,7 +105,7 @@ class Configuration:
     tavily_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
             "max_results": 5,
-            "include_raw_content": False,
+            "include_raw_content": True,
         }
     )
     arxiv_search_config: dict[str, Any] | None = field(
