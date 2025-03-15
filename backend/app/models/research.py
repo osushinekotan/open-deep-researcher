@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.config import DOCUMENTS_DIR, FTS_DATABASE, VECTOR_STORE_DIR
+from app.config import DOCUMENTS_DIR, FTS_DATABASE
 
 DEFAULT_REPORT_STRUCTURE = """Use this structure to create a report on the user-provided topic:
 Main Body Sections:
@@ -88,19 +88,12 @@ class ResearchConfig(BaseModel):
         "load_max_docs": 5,
         "get_full_documents": True,
     }
-    local_search_config: dict[str, Any] | None = {
-        "vector_store_path": str(VECTOR_STORE_DIR),
+    local_search_config: dict[str, Any] = {
         "local_document_path": str(DOCUMENTS_DIR),
-        "embedding_provider": "openai",
-        "embedding_model": "text-embedding-3-small",
-    }
-    google_patent_search_config: dict[str, Any] | None = {
         "db_path": str(FTS_DATABASE),
-        "limit": 10,
-        "query_expansion": True,
-        "initial_document_limit": 1000,
+        "chunk_size": 10000,
+        "chunk_overlap": 2000,
     }
-
     # 言語設定
     language: str = "japanese"
 
