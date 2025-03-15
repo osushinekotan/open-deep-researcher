@@ -1,12 +1,8 @@
 import asyncio
-import os
 
-import requests
-from exa_py import Exa
 from langchain_community.retrievers import ArxivRetriever
 from langchain_community.utilities.pubmed import PubMedAPIWrapper
 from langsmith import traceable
-from linkup import LinkupClient
 from tavily import AsyncTavilyClient
 
 from open_deep_researcher.utils import deduplicate_and_format_sources
@@ -14,10 +10,10 @@ from open_deep_researcher.utils import deduplicate_and_format_sources
 
 @traceable
 async def tavily_search_async(
-    search_queries,
-    max_results=5,
-    include_raw_content=True,
-):
+    search_queries: list[str],
+    max_results: int = 5,
+    include_raw_content: bool = True,
+) -> list[dict]:
     """
     Performs concurrent web searches using the Tavily API.
 
@@ -52,6 +48,8 @@ async def tavily_search_async(
                 max_results=max_results,
                 include_raw_content=include_raw_content,
                 topic="general",
+                include_images=True,
+                include_image_descriptions=True,
             )
         )
 
@@ -62,319 +60,13 @@ async def tavily_search_async(
 
 
 @traceable
-def perplexity_search(search_queries):
-    """Search the web using the Perplexity API.
-
-    Args:
-        search_queries (List[SearchQuery]): List of search queries to process
-
-    Returns:
-        List[dict]: List of search responses from Perplexity API, one per query. Each response has format:
-            {
-                'query': str,                    # The original search query
-                'follow_up_questions': None,
-                'answer': None,
-                'images': list,
-                'results': [                     # List of search results
-                    {
-                        'title': str,            # Title of the search result
-                        'url': str,              # URL of the result
-                        'content': str,          # Summary/snippet of content
-                        'score': float,          # Relevance score
-                        'raw_content': str|None  # Full content or None for secondary citations
-                    },
-                    ...
-                ]
-            }
-    """
-
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "Authorization": f"Bearer {os.getenv('PERPLEXITY_API_KEY')}",
-    }
-
-    search_docs = []
-    for query in search_queries:
-        payload = {
-            "model": "sonar-pro",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "Search the web and provide factual information with sources.",
-                },
-                {"role": "user", "content": query},
-            ],
-        }
-
-        response = requests.post("https://api.perplexity.ai/chat/completions", headers=headers, json=payload)
-        response.raise_for_status()  # Raise exception for bad status codes
-
-        # Parse the response
-        data = response.json()
-        content = data["choices"][0]["message"]["content"]
-        citations = data.get("citations", ["https://perplexity.ai"])
-
-        # Create results list for this query
-        results = []
-
-        # First citation gets the full content
-        results.append(
-            {
-                "title": "Perplexity Search, Source 1",
-                "url": citations[0],
-                "content": content,
-                "raw_content": content,
-                "score": 1.0,  # Adding score to match Tavily format
-            }
-        )
-
-        # Add additional citations without duplicating content
-        for i, citation in enumerate(citations[1:], start=2):
-            results.append(
-                {
-                    "title": f"Perplexity Search, Source {i}",
-                    "url": citation,
-                    "content": "See primary source for full content",
-                    "raw_content": None,
-                    "score": 0.5,  # Lower score for secondary sources
-                }
-            )
-
-        # Format response to match Tavily structure
-        search_docs.append(
-            {
-                "query": query,
-                "follow_up_questions": None,
-                "answer": None,
-                "images": [],
-                "results": results,
-            }
-        )
-
-    return search_docs
-
-
-@traceable
-async def exa_search(  # noqa
-    search_queries,
-    max_characters: int | None = None,
-    num_results=5,
-    include_domains: list[str] | None = None,
-    exclude_domains: list[str] | None = None,
-    subpages: int | None = None,
-):
-    """Search the web using the Exa API.
-
-    Args:
-        search_queries (List[SearchQuery]): List of search queries to process
-        max_characters (int, optional): Maximum number of characters to retrieve for each result's raw content.
-                                       If None, the text parameter will be set to True instead of an object.
-        num_results (int): Number of search results per query. Defaults to 5.
-        include_domains (List[str], optional): List of domains to include in search results.
-            When specified, only results from these domains will be returned.
-        exclude_domains (List[str], optional): List of domains to exclude from search results.
-            Cannot be used together with include_domains.
-        subpages (int, optional): Number of subpages to retrieve per result. If None, subpages are not retrieved.
-
-    Returns:
-        List[dict]: List of search responses from Exa API, one per query. Each response has format:
-            {
-                'query': str,                    # The original search query
-                'follow_up_questions': None,
-                'answer': None,
-                'images': list,
-                'results': [                     # List of search results
-                    {
-                        'title': str,            # Title of the search result
-                        'url': str,              # URL of the result
-                        'content': str,          # Summary/snippet of content
-                        'score': float,          # Relevance score
-                        'raw_content': str|None  # Full content or None for secondary citations
-                    },
-                    ...
-                ]
-            }
-    """
-    # Check that include_domains and exclude_domains are not both specified
-    if include_domains and exclude_domains:
-        raise ValueError("Cannot specify both include_domains and exclude_domains")
-
-    # Initialize Exa client (API key should be configured in your .env file)
-    exa = Exa(api_key=f"{os.getenv('EXA_API_KEY')}")
-
-    # Define the function to process a single query
-    async def process_query(query):  # noqa
-        # Use run_in_executor to make the synchronous exa call in a non-blocking way
-        loop = asyncio.get_event_loop()
-
-        # Define the function for the executor with all parameters
-        def exa_search_fn():
-            # Build parameters dictionary
-            kwargs = {
-                # Set text to True if max_characters is None, otherwise use an object with max_characters
-                "text": True if max_characters is None else {"max_characters": max_characters},
-                "summary": True,  # This is an amazing feature by EXA. It provides an AI generated summary of the content based on the query
-                "num_results": num_results,
-            }
-
-            # Add optional parameters only if they are provided
-            if subpages is not None:
-                kwargs["subpages"] = subpages
-
-            if include_domains:
-                kwargs["include_domains"] = include_domains
-            elif exclude_domains:
-                kwargs["exclude_domains"] = exclude_domains
-
-            return exa.search_and_contents(query, **kwargs)
-
-        response = await loop.run_in_executor(None, exa_search_fn)
-
-        # Format the response to match the expected output structure
-        formatted_results = []
-        seen_urls = set()  # Track URLs to avoid duplicates
-
-        # Helper function to safely get value regardless of if item is dict or object
-        def get_value(item, key, default=None):
-            if isinstance(item, dict):
-                return item.get(key, default)
-            else:
-                return getattr(item, key, default) if hasattr(item, key) else default
-
-        # Access the results from the SearchResponse object
-        results_list = get_value(response, "results", [])
-
-        # First process all main results
-        for result in results_list:
-            # Get the score with a default of 0.0 if it's None or not present
-            score = get_value(result, "score", 0.0)
-
-            # Combine summary and text for content if both are available
-            text_content = get_value(result, "text", "")
-            summary_content = get_value(result, "summary", "")
-
-            content = text_content
-            if summary_content:
-                if content:
-                    content = f"{summary_content}\n\n{content}"
-                else:
-                    content = summary_content
-
-            title = get_value(result, "title", "")
-            url = get_value(result, "url", "")
-
-            # Skip if we've seen this URL before (removes duplicate entries)
-            if url in seen_urls:
-                continue
-
-            seen_urls.add(url)
-
-            # Main result entry
-            result_entry = {
-                "title": title,
-                "url": url,
-                "content": content,
-                "score": score,
-                "raw_content": text_content,
-            }
-
-            # Add the main result to the formatted results
-            formatted_results.append(result_entry)
-
-        # Now process subpages only if the subpages parameter was provided
-        if subpages is not None:
-            for result in results_list:
-                subpages_list = get_value(result, "subpages", [])
-                for subpage in subpages_list:
-                    # Get subpage score
-                    subpage_score = get_value(subpage, "score", 0.0)
-
-                    # Combine summary and text for subpage content
-                    subpage_text = get_value(subpage, "text", "")
-                    subpage_summary = get_value(subpage, "summary", "")
-
-                    subpage_content = subpage_text
-                    if subpage_summary:
-                        if subpage_content:
-                            subpage_content = f"{subpage_summary}\n\n{subpage_content}"
-                        else:
-                            subpage_content = subpage_summary
-
-                    subpage_url = get_value(subpage, "url", "")
-
-                    # Skip if we've seen this URL before
-                    if subpage_url in seen_urls:
-                        continue
-
-                    seen_urls.add(subpage_url)
-
-                    formatted_results.append(
-                        {
-                            "title": get_value(subpage, "title", ""),
-                            "url": subpage_url,
-                            "content": subpage_content,
-                            "score": subpage_score,
-                            "raw_content": subpage_text,
-                        }
-                    )
-
-        # Collect images if available (only from main results to avoid duplication)
-        images = []
-        for result in results_list:
-            image = get_value(result, "image")
-            if image and image not in images:  # Avoid duplicate images
-                images.append(image)
-
-        return {
-            "query": query,
-            "follow_up_questions": None,
-            "answer": None,
-            "images": images,
-            "results": formatted_results,
-        }
-
-    # Process all queries sequentially with delay to respect rate limit
-    search_docs = []
-    for i, query in enumerate(search_queries):
-        try:
-            # Add delay between requests (0.25s = 4 requests per second, well within the 5/s limit)
-            if i > 0:  # Don't delay the first request
-                await asyncio.sleep(0.25)
-
-            result = await process_query(query)
-            search_docs.append(result)
-        except Exception as e:
-            # Handle exceptions gracefully
-            print(f"Error processing query '{query}': {str(e)}")
-            # Add a placeholder result for failed queries to maintain index alignment
-            search_docs.append(
-                {
-                    "query": query,
-                    "follow_up_questions": None,
-                    "answer": None,
-                    "images": [],
-                    "results": [],
-                    "error": str(e),
-                }
-            )
-
-            # Add additional delay if we hit a rate limit error
-            if "429" in str(e):
-                print("Rate limit exceeded. Adding additional delay...")
-                await asyncio.sleep(1.0)  # Add a longer delay if we hit a rate limit
-
-    return search_docs
-
-
-@traceable
 async def arxiv_search_async(  # noqa
-    search_queries,
-    load_max_docs=5,
-    get_full_documents=True,
-    load_all_available_meta=True,
-    add_aditional_metadata=False,
-):
+    search_queries: list[str],
+    load_max_docs: int = 5,
+    get_full_documents: bool = True,
+    load_all_available_meta: bool = True,
+    add_aditional_metadata: bool = False,
+) -> list[dict]:
     """
     Performs concurrent searches on arXiv using the ArxivRetriever.
 
@@ -538,12 +230,12 @@ async def arxiv_search_async(  # noqa
 
 @traceable
 async def pubmed_search_async(  # noqa
-    search_queries,
-    top_k_results=5,
-    email=None,
-    api_key=None,
-    doc_content_chars_max=4000,
-):
+    search_queries: list[str],
+    top_k_results: int = 5,
+    email: str | None = None,
+    api_key: str | None = None,
+    doc_content_chars_max: int = 4000,
+) -> list[dict]:
     """
     Performs concurrent searches on PubMed using the PubMedAPIWrapper.
 
@@ -694,57 +386,12 @@ async def pubmed_search_async(  # noqa
     return search_docs
 
 
-@traceable
-async def linkup_search(search_queries, depth: str | None = "standard"):
-    """
-    Performs concurrent web searches using the Linkup API.
-
-    Args:
-        search_queries (List[SearchQuery]): List of search queries to process
-        depth (str, optional): "standard" (default)  or "deep". More details here https://docs.linkup.so/pages/documentation/get-started/concepts
-
-    Returns:
-        List[dict]: List of search responses from Linkup API, one per query. Each response has format:
-            {
-                'results': [            # List of search results
-                    {
-                        'title': str,   # Title of the search result
-                        'url': str,     # URL of the result
-                        'content': str, # Summary/snippet of content
-                    },
-                    ...
-                ]
-            }
-    """
-    client = LinkupClient()
-    search_tasks = []
-    for query in search_queries:
-        search_tasks.append(
-            client.async_search(
-                query,
-                depth,
-                output_type="searchResults",
-            )
-        )
-
-    search_results = []
-    for response in await asyncio.gather(*search_tasks):
-        search_results.append(
-            {
-                "results": [
-                    {"title": result.name, "url": result.url, "content": result.content} for result in response.results
-                ],
-            }
-        )
-
-    return search_results
-
-
 async def web_search(
     search_api: str,
     query_list: list[str],
     params_to_pass: dict,
     max_tokens_per_source: int = 8192,
+    max_images: int | None = 10,
 ) -> str:
     """Select and execute the appropriate search API.
 
@@ -762,22 +409,17 @@ async def web_search(
     if search_api == "tavily":
         search_results = await tavily_search_async(query_list, **params_to_pass)
         return deduplicate_and_format_sources(
-            search_results, max_tokens_per_source=max_tokens_per_source, include_raw_content=False
+            search_results, max_tokens_per_source=max_tokens_per_source, max_images=max_images
         )
-    elif search_api == "perplexity":
-        search_results = perplexity_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
-    elif search_api == "exa":
-        search_results = await exa_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
     elif search_api == "arxiv":
         search_results = await arxiv_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
+        return deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=max_tokens_per_source, max_images=max_images
+        )
     elif search_api == "pubmed":
         search_results = await pubmed_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
-    elif search_api == "linkup":
-        search_results = await linkup_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=max_tokens_per_source)
+        return deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=max_tokens_per_source, max_images=max_images
+        )
     else:
         raise ValueError(f"Unsupported search API: {search_api}")
