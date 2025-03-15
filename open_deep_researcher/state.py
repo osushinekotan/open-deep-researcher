@@ -13,7 +13,7 @@ class Section(BaseModel):
     )
     content: str = Field(description="The content of the section.")
     search_options: list[str] = Field(
-        description="List of search providers to use for this section (e.g., tavily, arxiv, pubmed, exa, local, google_patent).",
+        description="List of search providers to use for this section (e.g., tavily, arxiv, local).",
     )
 
 

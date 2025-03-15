@@ -24,8 +24,7 @@ from open_deep_researcher.prompts import (
     section_writer_inputs,
     section_writer_instructions,
 )
-from open_deep_researcher.retriever.local import local_search, process_documents
-from open_deep_researcher.retriever.patent import initialize_patent_database, patent_search
+from open_deep_researcher.retriever.local.full_text_search import initialize_knowledge_base, local_search
 from open_deep_researcher.retriever.web import web_search
 from open_deep_researcher.state import (
     Feedback,
@@ -50,10 +49,7 @@ from open_deep_researcher.utils import (
 PROVIDER_DESCRIPTIONS = {
     "tavily": "General web search, good for broad information gathering",
     "arxiv": "Academic papers and preprints, best for scientific topics",
-    "pubmed": "Medical and biomedical research, best for health topics",
-    "exa": "Comprehensive web search with additional context",
     "local": "Search through locally stored documents",
-    "google_patent": "Search through Google Patents database",
 }
 
 
@@ -64,14 +60,8 @@ def get_provider_config(configurable: Configuration, provider_name: str) -> dict
         return configurable.tavily_search_config or {}
     elif provider_name == "arxiv":
         return configurable.arxiv_search_config or {}
-    elif provider_name == "pubmed":
-        return configurable.pubmed_search_config or {}
-    elif provider_name == "exa":
-        return configurable.exa_search_config or {}
     elif provider_name == "local":
         return configurable.local_search_config or {}
-    elif provider_name == "google_patent":
-        return configurable.google_patent_search_config or {}
     else:
         # デフォルト設定（空の辞書）を返す
         return {}
@@ -80,53 +70,7 @@ def get_provider_config(configurable: Configuration, provider_name: str) -> dict
 ## Nodes --
 
 
-async def setup_patent_db(state: ReportState, config: RunnableConfig):
-    """ユーザーのトピックに基づいて特許データベースを初期化するノード
-
-    このノードは以下を行います：
-    1. available_search_providers に google_patent が含まれているか確認
-    2. 含まれている場合、LLMを使ってトピックから検索キーワードを生成
-    3. 生成したキーワードでBigQueryを検索
-    4. 検索結果をSQLiteデータベースに保存
-
-    Args:
-        state: 現在のグラフ状態
-        config: 実行設定
-
-    Returns:
-        初期化結果の辞書
-    """
-    # Get configuration
-    configurable = Configuration.from_runnable_config(config)
-
-    # Skip if Google Patent is not available
-    if "google_patent" not in configurable.available_search_providers:
-        return {"patent_db_ready": False}
-
-    topic = state["topic"]
-
-    # 特許データベースの設定を取得
-    patent_config = configurable.google_patent_search_config or {}
-    db_path = patent_config.get("db_path", "patent_database.sqlite")
-
-    # LLMの設定
-    planner_provider = get_config_value(configurable.planner_provider)
-    planner_model = get_config_value(configurable.planner_model)
-    planner_model_config = configurable.planner_model_config or {}
-    initial_document_limit = patent_config.get("initial_document_limit", 1000)
-    success = await initialize_patent_database(
-        topic=topic,
-        db_path=db_path,
-        llm_provider=planner_provider,
-        llm_model=planner_model,
-        llm_model_config=planner_model_config,
-        max_results=initial_document_limit,
-    )
-
-    return {"patent_db_ready": success}
-
-
-async def setup_local_documents(state: ReportState, config: RunnableConfig):
+async def setup_knowledge_base(state: ReportState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
 
@@ -141,8 +85,8 @@ async def setup_local_documents(state: ReportState, config: RunnableConfig):
     if not local_document_path:
         return {"local_documents_ready": False}
 
-    vector_store = await process_documents(**local_config)
-    return {"local_documents_ready": vector_store is not None}
+    db_path = await initialize_knowledge_base(**local_config)
+    return {"local_documents_ready": db_path is not None}
 
 
 def extract_urls_from_search_results(source_str: str) -> list[str]:
@@ -215,12 +159,6 @@ async def generate_introduction(state: ReportState, config: RunnableConfig):
 
     if introduction_provider == "local":
         source_str = await local_search(
-            query_list=query_list,
-            max_tokens_per_source=configurable.max_tokens_per_source,
-            **provider_config,
-        )
-    elif introduction_provider == "google_patent":
-        source_str = await patent_search(
             query_list=query_list,
             max_tokens_per_source=configurable.max_tokens_per_source,
             **provider_config,
@@ -332,12 +270,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     if planning_provider == "local":
         source_str = await local_search(
-            query_list=query_list,
-            max_tokens_per_source=configurable.max_tokens_per_source,
-            **provider_config,
-        )
-    elif planning_provider == "google_patent":
-        source_str = await patent_search(
             query_list=query_list,
             max_tokens_per_source=configurable.max_tokens_per_source,
             **provider_config,
@@ -589,28 +521,8 @@ async def search(state: SectionState, config: RunnableConfig):  # noqa: C901
                     params_to_pass=get_provider_config(configurable, provider),
                     max_tokens_per_source=max_tokens_per_source,
                 )
-            elif provider == "pubmed":
-                search_result = await web_search(
-                    "pubmed",
-                    query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
-                    max_tokens_per_source=max_tokens_per_source,
-                )
-            elif provider == "exa":
-                search_result = await web_search(
-                    "exa",
-                    query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
-                    max_tokens_per_source=max_tokens_per_source,
-                )
             elif provider == "local":
                 search_result = await local_search(
-                    query_list,
-                    max_tokens_per_source=max_tokens_per_source,
-                    **get_provider_config(configurable, provider),
-                )
-            elif provider == "google_patent":
-                search_result = await patent_search(
                     query_list,
                     max_tokens_per_source=max_tokens_per_source,
                     **get_provider_config(configurable, provider),
@@ -975,12 +887,6 @@ async def deep_research_search(state: SectionState, config: RunnableConfig):
                         max_tokens_per_source=configurable.max_tokens_per_source,
                         **provider_config,
                     )
-                elif provider == "google_patent":
-                    result = await patent_search(
-                        query_list=query_list,
-                        max_tokens_per_source=configurable.max_tokens_per_source,
-                        **provider_config,
-                    )
                 else:
                     result = await web_search(
                         search_api=provider,
@@ -1111,8 +1017,7 @@ builder = StateGraph(
     output=ReportStateOutput,
     config_schema=Configuration,
 )
-builder.add_node("setup_patent_db", setup_patent_db)
-builder.add_node("setup_local_documents", setup_local_documents)
+builder.add_node("setup_knowledge_base", setup_knowledge_base)
 builder.add_node("determine_if_question", determine_if_question)
 builder.add_node("generate_introduction", generate_introduction)
 builder.add_node("generate_report_plan", generate_report_plan)
@@ -1124,9 +1029,8 @@ builder.add_node("generate_conclusion", generate_conclusion)
 
 
 # Add edges
-builder.add_edge(START, "setup_local_documents")
-builder.add_edge("setup_local_documents", "setup_patent_db")
-builder.add_edge("setup_patent_db", "determine_if_question")
+builder.add_edge(START, "setup_knowledge_base")
+builder.add_edge("setup_knowledge_base", "determine_if_question")
 builder.add_edge("determine_if_question", "generate_introduction")
 builder.add_edge("generate_introduction", "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")

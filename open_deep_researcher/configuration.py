@@ -29,9 +29,7 @@ class WriterProvider(str, Enum):
 class SearchProvider(str, Enum):
     TAVILY = "tavily"
     ARXIV = "arxiv"
-    PUBMED = "pubmed"
     LOCAL = "local"
-    GOOGLE_PATENT = "google_patent"
 
 
 @dataclass(kw_only=True)
@@ -118,18 +116,10 @@ class Configuration:
     )
     local_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
-            "vector_store_path": "data/vector_store",
+            "db_path": "data/local_documents.sqlite",
             "local_document_path": None,
-            "embedding_provider": "openai",
-            "embedding_model": "text-embedding-3-small",
-        }
-    )
-    google_patent_search_config: dict[str, Any] | None = field(
-        default_factory=lambda: {
-            "db_path": "data/patent_database.sqlite",
-            "limit": 10,
-            "query_expansion": True,
-            "initial_document_limit": 1000,  # 初期 DB に格納するドキュメント数
+            "chunk_size": 10000,
+            "chunk_overlap": 2000,
         }
     )
 
