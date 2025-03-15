@@ -28,10 +28,7 @@ class WriterProviderEnum(str, Enum):
 class SearchProviderEnum(str, Enum):
     TAVILY = "tavily"
     ARXIV = "arxiv"
-    PUBMED = "pubmed"
-    EXA = "exa"
     LOCAL = "local"
-    GOOGLE_PATENT = "google_patent"
 
 
 class ResearchConfig(BaseModel):

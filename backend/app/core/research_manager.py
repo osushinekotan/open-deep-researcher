@@ -6,7 +6,7 @@ from typing import Any
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
-from app.config import DOCUMENTS_DIR, VECTOR_STORE_DIR
+from app.config import DOCUMENTS_DIR, FTS_DATABASE
 from app.db.models import init_db
 from app.models.research import DEFAULT_REPORT_STRUCTURE, PlanResponse, ResearchConfig, ResearchStatus, SectionModel
 from app.services.research_service import get_research_service
@@ -362,16 +362,10 @@ class ResearchManager:
                 "get_full_documents": True,
             },
             "local_search_config": {
-                "vector_store_path": str(VECTOR_STORE_DIR),
                 "local_document_path": str(DOCUMENTS_DIR),
-                "embedding_provider": "openai",
-                "embedding_model": "text-embedding-3-small",
-            },
-            "google_patent_search_config": {
-                "db_path": "data/patent_database.sqlite",
-                "limit": 10,
-                "query_expansion": True,
-                "initial_document_limit": 1000,
+                "db_path": str(FTS_DATABASE),
+                "chunk_size": 10000,
+                "chunk_overlap": 2000,
             },
             # 言語設定
             "language": "japanese",
