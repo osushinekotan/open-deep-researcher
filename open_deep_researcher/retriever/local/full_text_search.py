@@ -1,7 +1,6 @@
 import asyncio
+import hashlib
 import sqlite3
-import tempfile
-import uuid
 from pathlib import Path
 from typing import Any
 
@@ -230,7 +229,7 @@ class SQLiteFTSDocumentRetriever:
 @traceable
 async def initialize_knowledge_base(
     local_document_path: str | Path,
-    db_path: str | Path = None,
+    db_path: str | Path,
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
     **kwargs,
@@ -248,15 +247,8 @@ async def initialize_knowledge_base(
     """
     # Pathオブジェクトに変換
     doc_path = Path(local_document_path)
+    db_path = Path(db_path)
 
-    # db_pathが指定されていない場合は一時ファイルを作成
-    if db_path is None:
-        db_filename = f"docs_fts_{uuid.uuid4().hex}.sqlite"
-        db_path = Path(tempfile.gettempdir()) / db_filename
-    else:
-        db_path = Path(db_path)
-
-    # 親ディレクトリが存在しない場合は作成
     db_path.unlink(missing_ok=True)  # 常に新しく作成するため
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -288,8 +280,6 @@ async def initialize_knowledge_base(
 
             # ドキュメントを読み込む
             docs = await load_document(file_path)
-
-            # ドキュメントをチャンクに分割
             chunked_docs = chunk_documents(docs, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
             for i, chunk in enumerate(chunked_docs):
@@ -298,7 +288,7 @@ async def initialize_knowledge_base(
                 # ドキュメントデータを作成
                 doc_data = {
                     "file_path": rel_path,
-                    "title": f"{file_path.name} (チャンク {i + 1}/{len(chunked_docs)})",
+                    "title": f"{file_path.name} (chunk {i + 1}/{len(chunked_docs)})",
                     "content": chunk.page_content,
                     "chunk_id": chunk_id,
                 }
@@ -384,7 +374,7 @@ async def search_local_documents(
 @traceable
 async def local_search(
     query_list: list[str],
-    db_path: str | Path,
+    db_path: str | Path | None = None,
     top_k: int = 5,
     max_tokens_per_source: int = 8192,
     **kwargs,
@@ -421,5 +411,5 @@ async def local_search(
                     "error": str(e),
                 }
             )
-
+    print(search_docs)
     return deduplicate_and_format_sources(search_docs, max_tokens_per_source=max_tokens_per_source)

@@ -88,10 +88,7 @@ class Configuration:
         default_factory=lambda: [
             SearchProvider.TAVILY,
             # SearchProvider.ARXIV,
-            # SearchProvider.PUBMED,
-            # SearchProvider.EXA,
             # SearchProvider.LOCAL,
-            # SearchProvider.GOOGLE_PATENT,
         ]
     )
     # deep_research 時に利用するプロバイダーのリストを指定
@@ -116,8 +113,8 @@ class Configuration:
     )
     local_search_config: dict[str, Any] | None = field(
         default_factory=lambda: {
-            "db_path": "data/local_documents.sqlite",
-            "local_document_path": None,
+            "local_document_path": "examples/docs",
+            "db_path": "tmp/db.sqlite",
             "chunk_size": 10000,
             "chunk_overlap": 2000,
         }

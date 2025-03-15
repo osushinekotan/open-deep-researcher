@@ -71,17 +71,18 @@ QUERY_GNERATION_DESCRIPTION = {
 """,
     "local": """
 1. **SQLite FTS5の検索構文**:
-   * 基本的な検索: 単語をスペースで区切る（暗黙的にAND）
-   * ブール演算子: AND, OR, NOT (大文字でなければならない)
-   * フレーズ検索: 単語を引用符で囲む（例: "exact phrase"）
-   * ワイルドカード: 語幹検索に*を使用（例: process*）
-   * 近接検索: NEAR/N（例: word1 NEAR/3 word2）- Nは最大単語間距離
+    * 基本的な検索: 単語をスペースで区切る（暗黙的にAND）
+    * ブール演算子: AND, OR, NOT (大文字でなければならない)
+    * フレーズ検索: 単語を引用符で囲む（例: "exact phrase"）
+    * ワイルドカード: 語幹検索に*を使用（例: process*）
+    * 近接検索: NEAR/N（例: word1 NEAR/3 word2）- Nは最大単語間距離
 
 2. **検索精度とリコールの最適化**:
-   * 重要キーワードを含める（ANDで結合）: keyword1 keyword2
-   * 代替表現を使用（ORで結合）: keyword1 OR alternative1
-   * 派生形も含める: keyword* で語幹からの派生形もカバー
-   * 検索の文脈を明確化: 特定分野内の検索なら分野も含める
+    * 重要キーワードを含める（ANDで結合）: keyword1 keyword2
+    * 代替表現を使用（ORで結合）: keyword1 OR alternative1
+    * 派生形も含める: keyword* で語幹からの派生形もカバー
+    * 検索の文脈を明確化: 特定分野内の検索なら分野も含める
+    * **必ず日本語キーワードと英語訳をORで結合**: `日本語キーワード OR english_translation`
 
 3. **プロバイダ固有の最適化**:
     * ブール演算子を活用: `machine AND learning NOT basic`
@@ -89,13 +90,32 @@ QUERY_GNERATION_DESCRIPTION = {
     * 語形変化対応: `process*`（processes, processing等にマッチ）
     * 複合クエリは丸括弧でグループ化: `(deep OR advanced) AND learning`
     * 同義語を考慮: `(artificial OR computational) intelligence`
+    * **多言語対応**: `(人工知能 OR "artificial intelligence")`
+    * **必ず各主要キーワードに英訳を追加**: 日本語キーワードには英訳を、英語キーワードには日本語訳を追加
 
 4. **検索パターン例**:
-   a. 中核概念の単純クエリ: `machine learning`
-   b. 代替表現を含むOR拡張クエリ: `"neural network" OR "deep learning"`
-   c. 文脈制限クエリ: `python AND "machine learning" NOT statistics`
-   d. ワイルドカード活用クエリ: `program* AND analy*`
-   e. 概念組み合わせクエリ: `"data preparation" AND model*`
+    a. 中核概念の単純クエリ: `機械学習 OR "machine learning"`
+    b. 代替表現を含むOR拡張クエリ: `(ニューラルネットワーク OR "neural network") OR (深層学習 OR "deep learning")`
+    c. 文脈制限クエリ: `(Python OR パイソン) AND (機械学習 OR "machine learning") NOT 統計`
+    d. ワイルドカード活用クエリ: `(プログラム* OR program*) AND (分析 OR analy*)`
+    e. 概念組み合わせクエリ: `(データ準備 OR "data preparation") AND (モデル* OR model*)`
+    f. 多言語対応クエリ: `(自然言語処理 OR NLP OR "natural language processing")`
+
+5. **多言語検索の重要なルール**:
+    * **すべての主要キーワードに英語訳をORで追加**: より広範囲のドキュメントにマッチさせるため
+    * 専門用語は原語と訳語の両方を含める: `強化学習 OR "reinforcement learning"`
+    * 略語と正式名称の両方を考慮: `CNN OR "Convolutional Neural Network" OR 畳み込みニューラルネットワーク`
+    * 英語のみ/日本語のみの単語でも別の言語での表現を追加: `Docker OR ドッカー`, `データベース OR database`
+
+6. リコール重視のクエリ設計における注意点
+    * キーワードの包括性: 主要なキーワードおよびその同義語・代替表現をORで結合することで、広範な結果を得る。(例: 機械学習 OR "machine learning")
+    * シンプルな論理構造の採用: 複雑なAND条件や多重括弧は避け、スペース区切りの暗黙的ANDでシンプルに記述する。
+    * 柔軟な文脈表現: 検索対象の文脈を強制的に限定せず、広く関連情報を取得できる表現を用いる。
+    * ブール演算子の最小限利用: 必要最低限のAND, NOTを使用し、過度な絞り込みによるリコール低下を防ぐ。
+    * 多言語対応の徹底: 各主要キーワードには必ず英語訳をORで追加する。
+
+各クエリは相互に重複せず、トピックの異なる側面をカバーするように作成してください。
+** 必ずすべてのクエリに日本語と英語の両方を含めてください **
 """,
 }
 
