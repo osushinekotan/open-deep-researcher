@@ -701,96 +701,6 @@ export function ResearchForm() {
                       <span className="text-xs font-normal text-gray-500">(学術論文検索)</span>
                     </Label>
                   </div>
-                  
-                  {/* <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="search_pubmed" 
-                      checked={config.available_search_providers?.includes(SearchProviderEnum.PUBMED)}
-                      onCheckedChange={(checked) => {
-                        const providers = [...(config.available_search_providers || [])];
-                        if (checked) {
-                          if (!providers.includes(SearchProviderEnum.PUBMED)) {
-                            providers.push(SearchProviderEnum.PUBMED);
-                          }
-                        } else {
-                          const index = providers.indexOf(SearchProviderEnum.PUBMED);
-                          if (index >= 0) {
-                            providers.splice(index, 1);
-                          }
-                        }
-                        updateConfig({ 
-                          available_search_providers: providers,
-                          default_search_provider: providers.length > 0 ? providers[0] : undefined
-                        });
-                      }}
-                      disabled={isPending}
-                    />
-                    <Label htmlFor="search_pubmed" className="font-medium flex items-center gap-1.5">
-                      <Database size={14} />
-                      PubMed
-                      <span className="text-xs font-normal text-gray-500">(医学・生物学論文)</span>
-                    </Label>
-                  </div> */}
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="search_patent" 
-                      checked={config.available_search_providers?.includes(SearchProviderEnum.GOOGLE_PATENT)}
-                      onCheckedChange={(checked) => {
-                        const providers = [...(config.available_search_providers || [])];
-                        if (checked) {
-                          if (!providers.includes(SearchProviderEnum.GOOGLE_PATENT)) {
-                            providers.push(SearchProviderEnum.GOOGLE_PATENT);
-                          }
-                        } else {
-                          const index = providers.indexOf(SearchProviderEnum.GOOGLE_PATENT);
-                          if (index >= 0) {
-                            providers.splice(index, 1);
-                          }
-                        }
-                        updateConfig({ 
-                          available_search_providers: providers,
-                          default_search_provider: providers.length > 0 ? providers[0] : undefined
-                        });
-                      }}
-                      disabled={isPending}
-                    />
-                    <Label htmlFor="search_patent" className="font-medium flex items-center gap-1.5">
-                      <Database size={14} />
-                      Google Patent
-                      <span className="text-xs font-normal text-gray-500">(特許情報)</span>
-                    </Label>
-                  </div>
-                  {/* TODO: local document upload and search */}
-                  {/* <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="search_local" 
-                      checked={config.available_search_providers?.includes(SearchProviderEnum.LOCAL)}
-                      onCheckedChange={(checked) => {
-                        const providers = [...(config.available_search_providers || [])];
-                        if (checked) {
-                          if (!providers.includes(SearchProviderEnum.LOCAL)) {
-                            providers.push(SearchProviderEnum.LOCAL);
-                          }
-                        } else {
-                          const index = providers.indexOf(SearchProviderEnum.LOCAL);
-                          if (index >= 0) {
-                            providers.splice(index, 1);
-                          }
-                        }
-                        updateConfig({ 
-                          available_search_providers: providers,
-                          default_search_provider: providers.length > 0 ? providers[0] : undefined
-                        });
-                      }}
-                      disabled={isPending}
-                    />
-                    <Label htmlFor="search_local" className="font-medium flex items-center gap-1.5">
-                      <Database size={14} />
-                      ローカルドキュメント
-                      <span className="text-xs font-normal text-gray-500">(アップロード済みファイル)</span>
-                    </Label>
-                  </div> */}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">少なくとも1つの検索プロバイダーを選択してください</p>
               </div>
@@ -872,93 +782,6 @@ export function ResearchForm() {
                           </div>
                         </div>
                       )}
-                      {/* Google Patent設定 */}
-                      {config.available_search_providers.includes(SearchProviderEnum.GOOGLE_PATENT) && (
-                        <div className="rounded-lg p-4 space-y-3">
-                          <h4 className="font-medium text-sm flex items-center gap-1.5">
-                            <Database size={14} />
-                            Google Patent 設定
-                          </h4>
-                          <div className="space-y-4">
-                            {/* 最大取得特許数 と 初期ドキュメント制限 */}
-                            <div className="space-y-2">
-                              {/* 最大取得特許数 */}
-                              <Label className="text-sm">最大取得特許数</Label>
-                              <div className="flex items-center gap-4">
-                                <Slider
-                                  id="patent_max_results"
-                                  defaultValue={[config.google_patent_search_config?.limit || 10]}
-                                  min={1}
-                                  max={20}
-                                  step={1}
-                                  className="flex-1"  // スライダーを横いっぱいに
-                                  onValueChange={(values) => updateConfig({
-                                    google_patent_search_config: {
-                                      ...config.google_patent_search_config,
-                                      limit: values[0],
-                                    }
-                                  })}
-                                  disabled={isPending}
-                                />
-                                <span className="text-sm font-medium w-16 text-right">
-                                  {config.google_patent_search_config?.limit || 10}
-                                </span>
-                              </div>
-
-                              {/* 初期ドキュメント制限 */}
-                              <Label className="text-sm">初期ドキュメント制限</Label>
-                              <div className="flex items-center gap-4">
-                                <Slider
-                                  id="patent_initial_limit"
-                                  defaultValue={[config.google_patent_search_config?.initial_document_limit || 1000]}
-                                  min={100}
-                                  max={5000}
-                                  step={100}
-                                  className="flex-1"
-                                  onValueChange={(values) => updateConfig({
-                                    google_patent_search_config: {
-                                      ...config.google_patent_search_config,
-                                      initial_document_limit: values[0]
-                                    }
-                                  })}
-                                  disabled={isPending}
-                                />
-                                <span className="text-sm font-medium w-16 text-right">
-                                  {config.google_patent_search_config?.initial_document_limit || 1000}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* クエリ拡張スイッチ */}
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  id="patent_query_expansion"
-                                  checked={config.google_patent_search_config?.query_expansion ?? true}
-                                  onCheckedChange={(checked) => updateConfig({
-                                    google_patent_search_config: {
-                                      ...config.google_patent_search_config,
-                                      query_expansion: checked
-                                    }
-                                  })}
-                                  disabled={isPending}
-                                />
-                                <Label
-                                  htmlFor="patent_query_expansion"
-                                  className="text-sm font-medium"
-                                >
-                                  クエリ拡張
-                                </Label>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                クエリを拡張して関連する特許を見つけます
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -983,8 +806,6 @@ export function ResearchForm() {
                         <SelectItem key={provider} value={provider}>
                           {provider === 'tavily' ? 'Tavily' : 
                            provider === 'arxiv' ? 'arXiv' : 
-                           provider === 'pubmed' ? 'PubMed' :
-                           provider === 'google_patent' ? 'Google Patent' :
                            provider === 'local' ? 'ローカルドキュメント' :
                            provider}
                         </SelectItem>

@@ -309,9 +309,6 @@ class ResearchManager:
             else:
                 task["status"] = "compiling_report"
 
-        elif "setup_patent_db" in event:
-            task["status"] = "initializing_patent_db"
-
         # デバッグ用：不明なイベントタイプがあれば内容を詳細に検査
         else:
             print(f"Unknown event type for {research_id}: {event.keys()}")

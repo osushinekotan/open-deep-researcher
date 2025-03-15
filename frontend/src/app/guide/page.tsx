@@ -189,7 +189,6 @@ export default function GuidePage() {
                 <ul className="text-sm list-disc pl-5 space-y-1 text-gray-600">
                   <li>Tavily: 汎用ウェブ検索</li>
                   <li>arXiv: 学術論文検索</li>
-                  <li>Google Patent: 特許情報</li>
                 </ul>
               </div>
 

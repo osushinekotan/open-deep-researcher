@@ -45,10 +45,7 @@ export interface ResearchResult {
 export enum SearchProviderEnum {
   TAVILY = "tavily",
   ARXIV = "arxiv",
-  PUBMED = "pubmed",
-  EXA = "exa",
   LOCAL = "local",
-  GOOGLE_PATENT = "google_patent"
 }
 
 export enum PlannerProviderEnum {
@@ -75,23 +72,11 @@ export interface ArxivSearchConfig {
   get_full_documents: boolean;
 }
 
-// PubMedの検索設定インターフェース
-export interface PubmedSearchConfig {
-  max_results: number;
-  try_full_text: boolean;
-}
-
-// Google Patentの検索設定インターフェース
-export interface GooglePatentSearchConfig {
-  limit: number;
-  query_expansion: boolean;
-  initial_document_limit: number;
-}
-
 // ローカル検索の設定インターフェース
 export interface LocalSearchConfig {
-  embedding_provider: string;
-  embedding_model: string;
+  local_document_path: string;
+  chunk_size: number;
+  chunk_overlap: number;
 }
 
 export interface ResearchConfig {
@@ -125,9 +110,7 @@ export interface ResearchConfig {
   max_tokens_per_source?: number;
   tavily_search_config?: TavilySearchConfig;
   arxiv_search_config?: ArxivSearchConfig;
-  pubmed_search_config?: PubmedSearchConfig;
   local_search_config?: LocalSearchConfig;
-  google_patent_search_config?: GooglePatentSearchConfig;
   language?: string;
 }
 

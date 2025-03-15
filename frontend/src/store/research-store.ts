@@ -74,13 +74,9 @@ const defaultConfig: ResearchConfig = {
     get_full_documents: true,
   },
   local_search_config: {
-    embedding_provider: 'openai',
-    embedding_model: 'text-embedding-3-small',
-  },
-  google_patent_search_config: {
-    limit: 5,
-    query_expansion: true,
-    initial_document_limit: 1000,
+    local_document_path: "",
+    chunk_size: 10000,
+    chunk_overlap: 2000,
   },
   
   // 言語設定
