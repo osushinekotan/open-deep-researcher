@@ -11,6 +11,7 @@ The queries should:
 1. Be related to the Report topic
 2. Help gather background information and context on the topic
 3. Focus on getting high-level overview information
+4. **Max number of queries is {number_of_queries}**
 
 Make the queries specific enough to find high-quality, relevant sources while focusing on introductory content.
 </Task>
@@ -65,6 +66,7 @@ The queries should:
 
 1. Be related to the Report topic
 2. Help satisfy the requirements specified in the report organization
+3. **Max number of queries is {number_of_queries}**
 
 Make the queries specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure.
 </Task>
@@ -199,17 +201,19 @@ section_writer_instructions = """Write one section of a research report.
 1. Review the report topic, section name, and section topic carefully.
 2. If present, review any existing section content.
 3. Then, look at the provided Source material.
-4. Decide the sources that you will use it to write a report section.
+4. Decide the sources that you will use to write the report section.
 5. Write the report section with inline citations.
 </Task>
 
 <Writing Guidelines>
-- If existing section content is not populated, write from scratch
-- If existing section content is populated, synthesize it with the source material
-- Maximum word count: about {max_words}
-- Use simple, clear language
-- Use short paragraphs (2-3 sentences max)
-- Use ## for section title (Markdown format)
+- If existing section content is not populated, write from scratch.
+- If existing section content is populated, synthesize it with the source material.
+- Maximum word count: about {max_words}.
+- Use simple, clear language.
+- Use ## for section title (Markdown format).
+- If an image and its description are provided, include them at the appropriate location in the report section.
+- Insert the image using HTML tags. For example: `<img src="image_url" alt="Image description">` or `<figure><img src="image_url" alt="Image description"><figcaption>Image description</figcaption></figure>`.
+- Only include the image if necessary.
 </Writing Guidelines>
 
 <Citation Rules>
@@ -221,9 +225,9 @@ section_writer_instructions = """Write one section of a research report.
 </Citation Rules>
 
 <Final Check>
-1. Verify that EVERY claim is grounded in the provided Source material and has an appropriate citation
-2. Confirm each citation is used correctly and corresponds to the right source
-3. Verify that citations are naturally integrated into the text
+1. Verify that EVERY claim is grounded in the provided Source material and has an appropriate citation.
+2. Confirm each citation is used correctly and corresponds to the right source.
+3. Verify that citations are naturally integrated into the text.
 </Final Check>
 """
 
