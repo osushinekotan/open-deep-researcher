@@ -592,20 +592,6 @@ wheels = [
 ]
 
 [[package]]
-name = "exa-py"
-version = "1.8.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "openai" },
-    { name = "requests" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/95/63/62c208d54e195013a2b5c9b1439942b4afc69f95ad0815fe9a51d36a2383/exa_py-1.8.9.tar.gz", hash = "sha256:03d9e31c71f86827007b5db581d02c808d88a7aaba1ad8422fc4425aabbaeb46", size = 13214 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/e8/fdbd91e6eb01aa38ae63a4ef16cb63b9bd467d105d3f81601439c7e0bab8/exa_py-1.8.9-py3-none-any.whl", hash = "sha256:8d3abe8f21d116dcfc59c9619f8ddc29fea171733500ed5a1050ac5d1675d973", size = 12428 },
-]
-
-[[package]]
 name = "executing"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1544,19 +1530,6 @@ wheels = [
 ]
 
 [[package]]
-name = "linkup-sdk"
-version = "0.2.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/90/4b/b0ea734cf4663f5fe06292c4e30c33522ba40196fc4d73d39dac15dc3566/linkup_sdk-0.2.3.tar.gz", hash = "sha256:112009b248e6f12b4e88bd90f8d3990504d83c08aec40c787e3ec20521357fdd", size = 9247 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/2c/5bad11458768d2a9344d6e2c67890a2cd0f20e0dd1c6880c7d61b37fca81/linkup_sdk-0.2.3-py3-none-any.whl", hash = "sha256:7d94f5e40228bb9557e7961a95718a690578b504c653fd13413fbeb509e5ba36", size = 8180 },
-]
-
-[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1888,7 +1861,6 @@ source = { editable = "." }
 dependencies = [
     { name = "arxiv" },
     { name = "chromadb" },
-    { name = "exa-py" },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-bigquery-storage" },
     { name = "langchain-anthropic" },
@@ -1897,7 +1869,6 @@ dependencies = [
     { name = "langchain-groq" },
     { name = "langchain-openai" },
     { name = "langgraph" },
-    { name = "linkup-sdk" },
     { name = "openai" },
     { name = "pandas" },
     { name = "pymupdf" },
@@ -1919,7 +1890,6 @@ dev = [
 requires-dist = [
     { name = "arxiv", specifier = ">=2.1.3" },
     { name = "chromadb", specifier = ">=0.6.3" },
-    { name = "exa-py", specifier = ">=1.8.9" },
     { name = "google-cloud-bigquery", specifier = ">=3.30.0" },
     { name = "google-cloud-bigquery-storage", specifier = ">=2.28.0" },
     { name = "langchain-anthropic", specifier = ">=0.3.9" },
@@ -1928,7 +1898,6 @@ requires-dist = [
     { name = "langchain-groq", specifier = ">=0.2.5" },
     { name = "langchain-openai", specifier = ">=0.3.8" },
     { name = "langgraph", specifier = ">=0.3.5" },
-    { name = "linkup-sdk", specifier = ">=0.2.3" },
     { name = "openai", specifier = ">=1.65.4" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pymupdf", specifier = ">=1.25.3" },
@@ -2536,6 +2505,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/06/47/b61c1c44b87cbdaee
 wheels = [
     { url = "https://files.pythonhosted.org/packages/61/9b/98ef4b98309e9db3baa9fe572f0e61b6130bb9852d13189970f35b703499/pymupdf-1.25.3-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:96878e1b748f9c2011aecb2028c5f96b5a347a9a91169130ad0133053d97915e", size = 19343576 },
     { url = "https://files.pythonhosted.org/packages/14/62/4e12126db174c8cfbf692281cda971cc4046c5f5226032c2cfaa6f83e08d/pymupdf-1.25.3-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:6ef753005b72ebfd23470f72f7e30f61e21b0b5e748045ec5b8f89e6e3068d62", size = 18580114 },
+    { url = "https://files.pythonhosted.org/packages/ec/c5/cf7ecf005e4f8ba3664d6aaa0613adeba4c2ab524832c452c69857e7184f/pymupdf-1.25.3-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:cbff443d899f37b17f1e67563cc03673d50b4bf33ccc237e73d34f18f3a07ccf", size = 19442580 },
     { url = "https://files.pythonhosted.org/packages/52/de/bd1418e31f73d37b8381cd5deacfd681e6be702b8890e123e83724569ee1/pymupdf-1.25.3-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:46d90c4f9e62d1856e8db4b9f04a202ff4a7f086a816af73abdc86adb7f5e25a", size = 19999825 },
     { url = "https://files.pythonhosted.org/packages/42/ee/3c449b0de061440ba1ac984aa845315e9e2dca0ff2003c5adfc6febff203/pymupdf-1.25.3-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:a5de51efdbe4d486b6c1111c84e8a231cbfb426f3d6ff31ab530ad70e6f39756", size = 21123157 },
     { url = "https://files.pythonhosted.org/packages/83/53/71faaaf91c56f2883b13f3dd849bf2697f012eb35eb7b952d62734cff41f/pymupdf-1.25.3-cp39-abi3-win32.whl", hash = "sha256:bca72e6089f985d800596e22973f79cc08af6cbff1d93e5bda9248326a03857c", size = 15094211 },
