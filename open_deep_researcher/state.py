@@ -61,8 +61,7 @@ class ReportState(TypedDict):
     conclusion: str  # Conclusion
     final_report: str  # Final report
     all_urls: Annotated[list[str], operator.add]  # List of all URLs referenced
-    local_documents_ready: bool  # Flag to indicate if local documents are ready
-    patent_db_ready: bool  # Flag to indicate if patent database is ready
+    local_db_path: None | str  # Path to local database
 
 
 class SectionState(TypedDict):

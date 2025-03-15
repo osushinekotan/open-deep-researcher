@@ -1,7 +1,7 @@
 import asyncio
-import hashlib
-import os
 import sqlite3
+import tempfile
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -96,17 +96,6 @@ class SQLiteFTSDocumentRetriever:
         """FTS検索を実行"""
         cursor = self.conn.cursor()
 
-        # クエリが特殊なFTS構文を含む場合はそのまま使い、そうでなければエスケープする
-        if any(op in query.upper() for op in ["AND", "OR", "NOT", "NEAR", '"']):
-            # すでに特殊構文を含む場合は直接使用
-            search_query = query
-        else:
-            # 基本的な検索の場合、各単語を暗黙のANDで結合
-            # SQLインジェクション対策として単語をエスケープ
-            words = query.split()
-            escaped_words = [word.replace('"', '""') for word in words]
-            search_query = " ".join(escaped_words)
-
         cursor.execute(
             """
             SELECT
@@ -121,7 +110,7 @@ class SQLiteFTSDocumentRetriever:
             ORDER BY rank
             LIMIT ?
             """,
-            (search_query, limit),
+            (query, limit),
         )
 
         results = []
@@ -162,7 +151,8 @@ class SQLiteFTSDocumentRetriever:
             file_path UNINDEXED,
             chunk_id UNINDEXED,
             content='documents',
-            content_rowid='id'
+            content_rowid='id',
+            tokenize='trigram'
         )
         """)
 
@@ -261,13 +251,13 @@ async def initialize_knowledge_base(
 
     # db_pathが指定されていない場合は一時ファイルを作成
     if db_path is None:
-        doc_path_str = str(doc_path.absolute())
-        db_filename = f"docs_fts_{hashlib.md5(doc_path_str.encode()).hexdigest()[:8]}.sqlite"
-        db_path = Path(os.path.join(os.path.dirname(doc_path), db_filename))
+        db_filename = f"docs_fts_{uuid.uuid4().hex}.sqlite"
+        db_path = Path(tempfile.gettempdir()) / db_filename
     else:
         db_path = Path(db_path)
 
     # 親ディレクトリが存在しない場合は作成
+    db_path.unlink(missing_ok=True)  # 常に新しく作成するため
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"データベースパス: {db_path}")

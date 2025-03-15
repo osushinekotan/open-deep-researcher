@@ -49,6 +49,7 @@ Reference sources inline according to the citation rules.
 </Task>
 """
 
+
 report_planner_query_writer_instructions = """You are performing research for a report.
 
 <Report topic>
@@ -71,6 +72,8 @@ The queries should:
 Make the queries specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure.
 </Task>
 """
+
+
 report_planner_instructions = """I want a plan for a report that is concise and focused.
 
 <Report topic>
@@ -130,6 +133,7 @@ Here is feedback on the report structure from review (if any):
 </Feedback>
 """
 
+
 query_writer_instructions = """You are an expert technical writer crafting targeted search queries that will gather comprehensive information for writing a technical report section.
 
 <Report topic>
@@ -149,25 +153,7 @@ Your goal is to generate {number_of_queries} search queries that will help gathe
 
 Customize your queries based on the search provider:
 
-<Tavily>
-- Natural language focus: Use natural sentence expressions that convey the context of the search subject.
-- Utilization of keywords and synonyms: Include main keywords as well as related synonyms and technical terms.
-- Concise and clear: Avoid redundant expressions; state the core information clearly.
-- Context-dependent expression: Choose expressions suited to the specific field or theme to accurately convey the intended meaning.
-</Tavily>
-
-<Arxiv>
-- Utilize field specifications: Clearly specify arXiv’s unique search fields such as title, author, and category.
-- Use academic terminology: Accurately include specialized and technical terms to narrow down relevant papers.
-- Quotation for phrase search: Enclose multi-word phrases in quotation marks to ensure an exact match.
-</Arxiv>
-
-<Local>
-- Consider overall search characteristics: Since the extraction is from the entire document, comprehensively include important keywords and phrases.
-- Consider synonyms and derived forms: Include related terms and variations so that the search engine can handle diverse expressions.
-- Enhance precision with Boolean operators: Use AND, OR, and NOT appropriately to obtain highly relevant results.
-- Clarify context: Incorporate supplementary information that indicates the search intent or context to improve precision.
-</Local>
+{query_generation_description}
 
 The queries should:
 1. Be related to the topic
@@ -177,6 +163,7 @@ The queries should:
 Make the queries specific enough to find high-quality, relevant sources.
 </Task>
 """
+
 
 section_writer_instructions = """Write one section of a research report.
 
@@ -236,6 +223,7 @@ section_writer_inputs = """
 {context}
 </Source material>
 """
+
 
 section_grader_instructions = """Review a report section relative to the specified topic:
 
@@ -299,6 +287,7 @@ deep_research_planner_instructions = """
 </Task>
 """
 
+
 deep_research_queries_instructions = """あなたは検索クエリ作成の専門家です。以下のサブトピックに関する詳細情報を収集するための検索クエリを生成してください。
 
 <Report Topic>
@@ -328,46 +317,12 @@ deep_research_queries_instructions = """あなたは検索クエリ作成の専�
 
 検索プロバイダごとにクエリを最適化してください：
 
-- "tavily"（一般的なウェブ検索）の場合：
-  * 一般的で包括的なキーワードカバレッジを持つクエリを作成
-  * 複数の関連概念をAND検索できるようなキーワードの組み合わせを使用
-  * 例: "量子コンピュータ アルゴリズム 最適化"
-
-- "arxiv"（学術論文検索）の場合：
-  * 学術的な専門用語と研究概念に焦点を当てたクエリを作成
-  * 研究領域の正確な用語と重要な著者名を含める
-  * "特許"や"論文"などの一般的な単語は不要
-  * 例: "quantum error correction superconducting qubits"
-
-- "pubmed"（医学文献）の場合：
-  * 正確な医学用語と疾患名を使用
-  * MeSHタームに対応する専門的な医学用語を使用
-  * "医学"や"治療"などの一般的な単語は不要
-  * 例: "CRISPR/Cas9 gene editing cardiovascular applications"
-
-- "exa"（詳細なウェブ検索）の場合：
-  * 高い特異性を持つ詳細なクエリを作成
-  * 具体的な用語や技術仕様を含める
-  * 例: "tensorflow implementation transformer architecture performance optimization"
-
-- "local"（ローカル文書のベクトル検索）の場合：
-  * これはセマンティック（意味的）検索であることに注意
-  * 正確な用語よりも、概念や意味を表す短いフレーズが効果的
-  * 完全一致ではなく意味的な類似性でマッチングするため、同義語や関連概念も含める
-  * 長すぎるクエリは避け、3〜5語程度の簡潔なクエリを作成
-  * 例: "深層学習アーキテクチャ" より "ニューラルネットワーク設計" の方が効果的
-
-- "google_patent"（特許の全文検索）の場合：
-  * これは全文検索であることに注意
-  * Tavilyと同様の形式を使用するが、単語数は3〜4語に絞る
-  * 最も重要な技術的なキーワードのみを含める
-  * "特許"や"patent"などの単語は含めない（すでに特許データベースを検索するため）
-  * 例: "optical lattice clock strontium"
-  * 別の例: "quantum computing error correction"
+{query_generation_description}
 
 各クエリは単独で使用でき、高品質なソース情報を見つけられるものにしてください。
 </Task>
 """
+
 
 deep_research_writer_instructions = """あなたは技術文書作成の専門家です。以下の情報を使用して、レポートのサブセクションを作成してください。
 

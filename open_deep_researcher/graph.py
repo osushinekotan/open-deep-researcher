@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import Literal
 
 from langchain.chat_models import init_chat_model
@@ -52,6 +53,52 @@ PROVIDER_DESCRIPTIONS = {
     "local": "Search through locally stored documents",
 }
 
+QUERY_GNERATION_DESCRIPTION = {
+    "tavily": """
+<Tavily>
+- Natural language focus: Use natural sentence expressions that convey the context of the search subject.
+- Utilization of keywords and synonyms: Include main keywords as well as related synonyms and technical terms.
+- Concise and clear: Avoid redundant expressions; state the core information clearly.
+- Context-dependent expression: Choose expressions suited to the specific field or theme to accurately convey the intended meaning.
+</Tavily>
+""",
+    "arxiv": """
+<Arxiv>
+- Utilize field specifications: Clearly specify arXiv’s unique search fields such as title, author, and category.
+- Use academic terminology: Accurately include specialized and technical terms to narrow down relevant papers.
+- Quotation for phrase search: Enclose multi-word phrases in quotation marks to ensure an exact match.
+</Arxiv>
+""",
+    "local": """
+1. **SQLite FTS5の検索構文**:
+   * 基本的な検索: 単語をスペースで区切る（暗黙的にAND）
+   * ブール演算子: AND, OR, NOT (大文字でなければならない)
+   * フレーズ検索: 単語を引用符で囲む（例: "exact phrase"）
+   * ワイルドカード: 語幹検索に*を使用（例: process*）
+   * 近接検索: NEAR/N（例: word1 NEAR/3 word2）- Nは最大単語間距離
+
+2. **検索精度とリコールの最適化**:
+   * 重要キーワードを含める（ANDで結合）: keyword1 keyword2
+   * 代替表現を使用（ORで結合）: keyword1 OR alternative1
+   * 派生形も含める: keyword* で語幹からの派生形もカバー
+   * 検索の文脈を明確化: 特定分野内の検索なら分野も含める
+
+3. **プロバイダ固有の最適化**:
+    * ブール演算子を活用: `machine AND learning NOT basic`
+    * フレーズ検索で正確な一致: `"neural network" NOT "network protocol"`
+    * 語形変化対応: `process*`（processes, processing等にマッチ）
+    * 複合クエリは丸括弧でグループ化: `(deep OR advanced) AND learning`
+    * 同義語を考慮: `(artificial OR computational) intelligence`
+
+4. **検索パターン例**:
+   a. 中核概念の単純クエリ: `machine learning`
+   b. 代替表現を含むOR拡張クエリ: `"neural network" OR "deep learning"`
+   c. 文脈制限クエリ: `python AND "machine learning" NOT statistics`
+   d. ワイルドカード活用クエリ: `program* AND analy*`
+   e. 概念組み合わせクエリ: `"data preparation" AND model*`
+""",
+}
+
 
 def get_provider_config(configurable: Configuration, provider_name: str) -> dict:
     """指定された検索プロバイダの設定を取得する"""
@@ -76,17 +123,17 @@ async def setup_knowledge_base(state: ReportState, config: RunnableConfig):
 
     # Skip if local document provider is not available
     if "local" not in configurable.available_search_providers:
-        return {"local_documents_ready": False}
+        return {"local_db_path": None}
 
     local_config = configurable.local_search_config or {}
     local_document_path = local_config.get("local_document_path", None)
 
     # Skip if local documents are not provided
     if not local_document_path:
-        return {"local_documents_ready": False}
+        return {"local_db_path": None}
 
     db_path = await initialize_knowledge_base(**local_config)
-    return {"local_documents_ready": db_path is not None}
+    return {"local_db_path": db_path}
 
 
 def extract_urls_from_search_results(source_str: str) -> list[str]:
@@ -458,11 +505,15 @@ def generate_queries(state: SectionState, config: RunnableConfig):
 
     for provider in search_options:
         # Format system instructions for this provider
+        query_generation_description = QUERY_GNERATION_DESCRIPTION.get(provider, "")
+        assert query_generation_description, f"Query generation description not found for provider: {provider}"
+
         system_instructions = query_writer_instructions.format(
             topic=topic,
             section_topic=section.description,
             search_provider=provider,
             number_of_queries=number_of_queries,
+            query_generation_description=query_generation_description,
         )
         system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -829,6 +880,8 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
         subtopic_queries = []
 
         for provider in deep_research_providers:
+            query_generation_description = QUERY_GNERATION_DESCRIPTION.get(provider, "")
+            assert query_generation_description, f"Query generation description not found for provider: {provider}"
             system_instructions = deep_research_queries_instructions.format(
                 topic=topic,
                 section_name=section.name,
@@ -836,6 +889,7 @@ def generate_deep_research_queries(state: SectionState, config: RunnableConfig):
                 subtopic_description=subtopic.description,
                 search_provider=provider,
                 number_of_queries=number_of_queries,
+                query_generation_description=query_generation_description,
             )
             system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
 
@@ -971,6 +1025,16 @@ def deep_research_writer(state: SectionState, config: RunnableConfig):
         )
 
 
+def cleanup(state: ReportState):
+    db_path = state.get("local_db_path")
+    if not db_path:
+        return {}
+
+    db_path = Path(db_path)
+    db_path.unlink(missing_ok=True)
+    return {}
+
+
 # Report section sub-graph --
 
 # Add nodes
@@ -1026,6 +1090,7 @@ builder.add_node("build_section_with_research", section_builder.compile())
 builder.add_node("gather_completed_sections", gather_completed_sections)
 builder.add_node("compile_final_report", compile_final_report)
 builder.add_node("generate_conclusion", generate_conclusion)
+builder.add_node("cleanup", cleanup)
 
 
 # Add edges
@@ -1037,6 +1102,7 @@ builder.add_edge("generate_report_plan", "human_feedback")
 builder.add_edge("build_section_with_research", "gather_completed_sections")
 builder.add_edge("gather_completed_sections", "generate_conclusion")
 builder.add_edge("generate_conclusion", "compile_final_report")
-builder.add_edge("compile_final_report", END)
+builder.add_edge("compile_final_report", "cleanup")
+builder.add_edge("cleanup", END)
 
 graph = builder.compile()
