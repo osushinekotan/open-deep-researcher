@@ -404,7 +404,7 @@ async def initialize_patent_database(
 
 @traceable
 async def patent_search(
-    search_queries: list[str],
+    query_list: list[str],
     db_path: str = "patent_database.sqlite",
     limit: int = 10,
     max_tokens_per_source: int = 8192,
@@ -414,7 +414,7 @@ async def patent_search(
     """特許検索を実行
 
     Args:
-        search_queries: 検索クエリのリスト
+        query_list: 検索クエリのリスト
         db_path: SQLiteデータベースのパス（デフォルト: "patent_database.sqlite"）
         limit: 各クエリで取得する結果の最大数（デフォルト: 10）
 
@@ -426,11 +426,11 @@ async def patent_search(
 
     # query_expansion: 翻訳や同義語を使ったクエリ拡張 (検索対象が local db であるため、検索回数増加を許容)
     if query_expansion:
-        for _query in search_queries:
+        for _query in query_list:
             expanded_queries = await expand_query(_query)
             full_search_queries.extend(expanded_queries.expanded_queries)
     else:
-        full_search_queries = search_queries
+        full_search_queries = query_list
     print("search_queries:", full_search_queries)
 
     try:
@@ -464,7 +464,7 @@ async def patent_search(
         print(f"特許検索エラー: {e}")
         search_docs.append(
             {
-                "query": search_queries[0] if search_queries else "",
+                "query": query_list[0] if query_list else "",
                 "follow_up_questions": None,
                 "answer": None,
                 "images": [],

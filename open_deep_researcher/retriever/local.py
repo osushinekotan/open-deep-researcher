@@ -335,7 +335,7 @@ async def search_local_documents(
 
 @traceable
 async def local_search(
-    search_queries: list[str],
+    query_list: list[str],
     vector_store_path: str | Path,
     embedding_provider: str = "openai",
     embedding_model: str = "text-embedding-3-small",
@@ -347,7 +347,7 @@ async def local_search(
     """ベクトル類似性を使用してローカルドキュメントを検索
 
     Args:
-        search_queries: 検索クエリのリスト
+        query_list: 検索クエリのリスト
         vector_store_path: ベクトルストアへのパス
         embedding_provider: 埋め込みプロバイダー（デフォルト: "openai"）
         embedding_model: 埋め込みモデル名（デフォルト: "text-embedding-3-small"）
@@ -368,7 +368,7 @@ async def local_search(
             print(f"No collection name specified or detected, using default: {collection_name}")
 
     search_docs = []
-    for query in search_queries:
+    for query in query_list:
         try:
             result = await search_local_documents(
                 query,
