@@ -35,12 +35,7 @@ class ResearchService:
                     existing_research.conclusion = research_data.get("conclusion")
                     existing_research.final_report = research_data.get("final_report")
                     existing_research.completed_at = research_data.get("completed_at")
-
-                    # 既存のセクションを削除
-                    db.query(Section).filter(Section.research_id == research_data["id"]).delete()
-
-                    # 既存のURLを削除
-                    db.query(URL).filter(URL.research_id == research_data["id"]).delete()
+                    existing_research.user_id = research_data.get("user_id")  # ユーザーIDを追加
                 else:
                     # 新規リサーチを作成
                     new_research = Research(
@@ -57,6 +52,7 @@ class ResearchService:
                         introduction=research_data.get("introduction"),
                         conclusion=research_data.get("conclusion"),
                         final_report=research_data.get("final_report"),
+                        user_id=research_data.get("user_id"),  # ユーザーIDを追加
                     )
                     db.add(new_research)
 
@@ -171,12 +167,18 @@ class ResearchService:
             print(traceback.format_exc())
             return None
 
-    def list_researches(self) -> list[dict]:
+    def list_researches(self, user_id: str | None = None) -> list[dict]:
         """すべてのリサーチの基本情報を取得"""
         try:
             with get_db_context() as db:
                 # リサーチ情報を取得
-                researches_query = db.query(Research).order_by(Research.created_at.desc())
+                if user_id:
+                    researches_query = (
+                        db.query(Research).filter(Research.user_id == user_id).order_by(Research.created_at.desc())
+                    )
+                else:
+                    researches_query = db.query(Research).order_by(Research.created_at.desc())
+
                 researches = []
 
                 for research in researches_query:
@@ -191,6 +193,7 @@ class ResearchService:
                         "progress": research.progress,
                         "error": research.error,
                         "waiting_for_feedback": research.waiting_for_feedback,
+                        "user_id": research.user_id,
                     }
 
                     # 完了済みセクション数と全セクション数を取得

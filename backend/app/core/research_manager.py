@@ -44,7 +44,13 @@ class ResearchManager:
         except Exception as e:
             print(f"永続ストアからのロード中にエラーが発生しました: {e}")
 
-    async def execute_research(self, research_id: str, topic: str, config: ResearchConfig | None = None):
+    async def execute_research(
+        self,
+        research_id: str,
+        topic: str,
+        config: ResearchConfig | None = None,
+        user_id: str | None = None,
+    ):
         """リサーチを実行する"""
         try:
             # 初期状態を設定
@@ -63,6 +69,7 @@ class ResearchManager:
                 "thread": None,
                 "progress": 0.0,
                 "all_urls": [],
+                "user_id": user_id,
             }
 
             # データベースに保存
@@ -485,11 +492,10 @@ class ResearchManager:
             ),  # completed_at がなければ created_at を使用
         }
 
-    async def list_researches(self) -> list[ResearchStatus]:
+    async def list_researches(self, user_id: str | None = None) -> list[ResearchStatus]:
         """すべてのリサーチのリストを取得"""
         # データベースから全てのリサーチ情報を取得
-        researches = self.research_service.list_researches()
-
+        researches = self.research_service.list_researches(user_id=user_id)
         # ResearchStatusオブジェクトのリストに変換
         result = []
         for research in researches:
@@ -504,6 +510,7 @@ class ResearchManager:
                 final_report=None,
                 error=research.get("error"),
                 completed_at=research.get("completed_at"),
+                user_id=research.get("user_id"),
             )
             result.append(status)
 

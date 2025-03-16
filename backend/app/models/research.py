@@ -98,13 +98,15 @@ class ResearchConfig(BaseModel):
 class ResearchRequest(BaseModel):
     topic: str
     config: ResearchConfig | None = None
+    user_id: str | None = None
 
 
 class ResearchResponse(BaseModel):
     research_id: str
     topic: str
     status: str = "pending"
-    message: str = "Research task created"
+    message: str = "リサーチタスクが作成されました"
+    user_id: str | None = None
 
 
 class SectionModel(BaseModel):
@@ -135,3 +137,4 @@ class ResearchStatus(BaseModel):
     final_report: str | None = None
     error: str | None = None
     completed_at: str | None = None
+    user_id: str | None = None

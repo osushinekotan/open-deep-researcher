@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import documents, feedback, research
+from app.api.endpoints import documents, feedback, research, users
 
 app = FastAPI(
     title="Open Deep Researcher API",
@@ -21,6 +21,7 @@ app.add_middleware(
 app.include_router(research.router, prefix="/api/research", tags=["research"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/")

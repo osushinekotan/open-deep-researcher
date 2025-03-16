@@ -21,7 +21,7 @@ class DocumentManager:
             with open(self.metadata_file, "w") as f:
                 json.dump({"indexed_at": None, "enabled_files": []}, f)
 
-    async def upload_documents(self, files: list[UploadFile]) -> list[UploadFile]:
+    async def upload_documents(self, files: list[UploadFile], user_id: str | None = None) -> list[UploadFile]:
         """ドキュメントをアップロード"""
         uploaded_files = []
 
@@ -33,24 +33,26 @@ class DocumentManager:
                 shutil.copyfileobj(file.file, buffer)
 
             uploaded_files.append(file)
-
-            # インデックス情報に追加（デフォルトで有効）
-            self._add_to_metadata(file.filename)
+            self._add_to_metadata(file.filename, user_id)
 
         return uploaded_files
 
-    async def list_documents(self) -> list[DocumentStatus]:
+    async def list_documents(self, user_id: str | None = None) -> list[DocumentStatus]:
         """アップロードされたドキュメントのリストを取得"""
         documents = []
 
         # インデックス情報の読み込み
         index_info = self._load_metadata()
         enabled_files = index_info.get("enabled_files", [])
+        file_metadata = index_info.get("file_metadata", {})
 
         for file_path in self.documents_dir.glob("*.*"):
             if file_path.is_file() and file_path.name != "index_info.json":
-                # ファイル情報を取得
                 stat = file_path.stat()
+                file_user_id = file_metadata.get(file_path.name, {}).get("user_id")
+                # filter by user_id
+                if user_id is not None and file_user_id != user_id:
+                    continue
 
                 documents.append(
                     DocumentStatus(
@@ -58,6 +60,7 @@ class DocumentManager:
                         size=stat.st_size,
                         uploaded_at=datetime.fromtimestamp(stat.st_mtime).isoformat(),
                         is_enabled=file_path.name in enabled_files,
+                        user_id=file_user_id,
                     )
                 )
 
@@ -101,14 +104,20 @@ class DocumentManager:
         with open(self.metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
 
-    def _add_to_metadata(self, filename: str):
+    def _add_to_metadata(self, filename: str, user_id: str | None = None):
         """インデックス情報にファイルを追加"""
         metadata = self._load_metadata()
         enabled_files = metadata.get("enabled_files", [])
         if filename not in enabled_files:
             enabled_files.append(filename)
             metadata["enabled_files"] = enabled_files
-            self._save_metadata(metadata)
+
+        # ファイルメタデータにユーザーIDを追加
+        file_metadata = metadata.get("file_metadata", {})
+        file_metadata[filename] = {"user_id": user_id}
+        metadata["file_metadata"] = file_metadata
+
+        self._save_metadata(metadata)
 
     def _remove_from_metadata(self, filename: str):
         """インデックス情報からファイルを削除"""

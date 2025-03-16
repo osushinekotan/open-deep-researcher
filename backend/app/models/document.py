@@ -11,6 +11,7 @@ class DocumentStatus(BaseModel):
     size: int
     uploaded_at: str
     is_enabled: bool = True
+    user_id: str | None = None
 
 
 class DocumentListResponse(BaseModel):

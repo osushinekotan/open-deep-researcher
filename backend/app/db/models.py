@@ -20,6 +20,7 @@ class Research(Base):
     __tablename__ = "research"
 
     id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"))
     topic = Column(String, nullable=False)
     status = Column(String, nullable=False)
     config = Column(Text)  # JSON形式で保存
@@ -66,7 +67,6 @@ class URL(Base):
     research = relationship("Research", back_populates="urls")
 
 
-# ユーザー関連のテーブル（将来実装用のスケルトン）
 class User(Base):
     """ユーザー情報のテーブル"""
 
@@ -74,43 +74,10 @@ class User(Base):
 
     id = Column(String, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False)
     created_at = Column(String, nullable=False)
 
-    settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
-
-
-class UserSettings(Base):
-    """ユーザー設定のテーブル"""
-
-    __tablename__ = "user_settings"
-
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    theme = Column(String, default="light")
-    language = Column(String, default="ja")
-    custom_settings = Column(Text)  # JSON形式で保存
-
-    user = relationship("User", back_populates="settings")
-
-
-class APIKey(Base):
-    """APIキーのテーブル"""
-
-    __tablename__ = "api_keys"
-
-    id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    key_name = Column(String, nullable=False)
-    hashed_key = Column(String, nullable=False)
-    created_at = Column(String, nullable=False)
-    last_used_at = Column(String)
-    is_active = Column(Boolean, default=True)
-
-    user = relationship("User", back_populates="api_keys")
+    # リレーションシップ
+    researches = relationship("Research", backref="user")
 
 
 def init_db():

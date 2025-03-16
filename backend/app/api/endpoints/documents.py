@@ -8,14 +8,15 @@ router = APIRouter()
 
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_documents(
-    files: list[UploadFile] = File(...),  # noqa
-    document_manager: DocumentManager = Depends(get_document_manager),  # noqa
+    files: list[UploadFile] = File(...),
+    user_id: str | None = None,
+    document_manager: DocumentManager = Depends(get_document_manager),
 ):
     """ドキュメントをアップロード"""
     if not files:
         raise HTTPException(status_code=400, detail="No files were uploaded")
 
-    uploaded_files = await document_manager.upload_documents(files)
+    uploaded_files = await document_manager.upload_documents(files, user_id=user_id)
     return DocumentUploadResponse(
         filenames=[file.filename for file in uploaded_files],
         message=f"{len(uploaded_files)} files uploaded successfully",
@@ -23,9 +24,12 @@ async def upload_documents(
 
 
 @router.get("/list", response_model=DocumentListResponse)
-async def list_documents(document_manager: DocumentManager = Depends(get_document_manager)):  # noqa
+async def list_documents(
+    user_id: str | None = None,
+    document_manager: DocumentManager = Depends(get_document_manager),
+):
     """アップロードされたドキュメントのリストを取得"""
-    documents = await document_manager.list_documents()
+    documents = await document_manager.list_documents(user_id=user_id)
     return DocumentListResponse(documents=documents, total=len(documents))
 
 

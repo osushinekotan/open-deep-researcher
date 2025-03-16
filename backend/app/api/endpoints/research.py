@@ -16,14 +16,18 @@ research_tasks: dict[str, dict[str, Any]] = {}
 async def start_research(
     request: ResearchRequest,
     background_tasks: BackgroundTasks,
-    research_manager: ResearchManager = Depends(get_research_manager),  # noqa
+    research_manager: ResearchManager = Depends(get_research_manager),
 ):
     """新しいリサーチを開始"""
     research_id = str(uuid.uuid4())
 
     # バックグラウンドタスクとしてリサーチを実行
     background_tasks.add_task(
-        research_manager.execute_research, research_id=research_id, topic=request.topic, config=request.config
+        research_manager.execute_research,
+        research_id=research_id,
+        topic=request.topic,
+        config=request.config,
+        user_id=request.user_id,  # ユーザーIDを渡す
     )
 
     return ResearchResponse(
@@ -31,6 +35,7 @@ async def start_research(
         topic=request.topic,
         status="pending",
         message="リサーチタスクが作成されました。ステータスを確認するには /status/{research_id} にアクセスしてください。",
+        user_id=request.user_id,
     )
 
 
@@ -71,9 +76,12 @@ async def get_research_result(
 
 
 @router.get("/list", response_model=list[ResearchStatus])
-async def list_researches(research_manager: ResearchManager = Depends(get_research_manager)):  # noqa
-    """すべてのリサーチのリストを取得"""
-    return await research_manager.list_researches()
+async def list_researches(
+    user_id: str | None = None,
+    research_manager: ResearchManager = Depends(get_research_manager),
+):
+    """リサーチのリストを取得"""
+    return await research_manager.list_researches(user_id=user_id)
 
 
 @router.delete("/{research_id}")
