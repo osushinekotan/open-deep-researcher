@@ -182,7 +182,7 @@ section_writer_instructions = """Write one section of a research report.
 - Use simple, clear language.
 - Use ## for section title (Markdown format).
 - If an image and its description are provided, include them at the appropriate location in the report section.
-- Insert the image using HTML tags. For example: `<img src="image_url" alt="Image description">` or `<figure><img src="image_url" alt="Image description"><figcaption>Image description</figcaption></figure>`.
+- Insert the image using markdown tags. For example: \n`![description](URL)`\n
 - Only include the image if necessary.
 </Writing Guidelines>
 
