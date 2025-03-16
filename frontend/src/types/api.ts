@@ -72,11 +72,20 @@ export interface ArxivSearchConfig {
   get_full_documents: boolean;
 }
 
-// ローカル検索の設定インターフェース
+// ドキュメントステータス
+export interface DocumentStatus {
+  filename: string;
+  size: number;
+  uploaded_at: string;
+  is_enabled: boolean;
+  user_id?: string | null;
+}
+
 export interface LocalSearchConfig {
   local_document_path: string;
   chunk_size: number;
   chunk_overlap: number;
+  enabled_files?: string[]; 
 }
 
 export interface ResearchConfig {

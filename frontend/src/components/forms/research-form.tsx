@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Card, 
@@ -56,7 +55,7 @@ import {
   HelpCircle, 
   Zap,
   BookOpen,
-  CheckCircle2,
+  AlertCircle,
   Workflow
 } from 'lucide-react';
 import { useResearchStore } from '@/store/research-store';
@@ -67,6 +66,10 @@ import {
   SearchProviderEnum 
 } from '@/types/api';
 
+import { useAuthStore } from "@/store/auth-store";
+import { useState, useEffect } from 'react';
+import { documentService } from '@/services/document-service';
+
 export function ResearchForm() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('basic');
@@ -76,6 +79,12 @@ export function ResearchForm() {
   
   // リサーチ開始ミューテーション
   const { mutate: startResearch, isPending } = useStartResearch();
+  
+  // ユーザー名を取得
+  const { username } = useAuthStore();
+  
+  // 有効なファイル一覧を保持
+  const [enabledFiles, setEnabledFiles] = useState<string[]>([]);
   
   // フォーム送信ハンドラ
   const handleSubmit = (e: React.FormEvent) => {
@@ -133,6 +142,32 @@ export function ResearchForm() {
       { value: 'llama-3-70b-8192', label: 'LLaMA-3 70B' },
     ]
   };
+
+
+  // ローカル検索が有効になったときにファイル一覧を取得
+  useEffect(() => {
+    async function fetchEnabledFiles() {
+      if (config.available_search_providers?.includes(SearchProviderEnum.LOCAL)) {
+        try {
+          const documents = await documentService.listDocuments(username || undefined);
+          const enabled = documents.filter(doc => doc.is_enabled).map(doc => doc.filename);
+          setEnabledFiles(enabled);
+          
+          // ローカル検索設定に有効ファイルリストを反映
+          updateConfig({
+            local_search_config: {
+              ...config.local_search_config,
+              enabled_files: enabled,
+            }
+          });
+        } catch (error) {
+          console.error('Failed to fetch document list:', error);
+        }
+      }
+    }
+    
+    fetchEnabledFiles();
+  }, [config.available_search_providers, username]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -701,6 +736,37 @@ export function ResearchForm() {
                       <span className="text-xs font-normal text-gray-500">(学術論文検索)</span>
                     </Label>
                   </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="search_local" 
+                      checked={config.available_search_providers?.includes(SearchProviderEnum.LOCAL)}
+                      onCheckedChange={(checked) => {
+                        const providers = [...(config.available_search_providers || [])];
+                        if (checked) {
+                          if (!providers.includes(SearchProviderEnum.LOCAL)) {
+                            providers.push(SearchProviderEnum.LOCAL);
+                          }
+                        } else {
+                          const index = providers.indexOf(SearchProviderEnum.LOCAL);
+                          if (index >= 0) {
+                            providers.splice(index, 1);
+                          }
+                        }
+                        updateConfig({ 
+                          available_search_providers: providers,
+                          default_search_provider: providers.length > 0 ? providers[0] : undefined
+                        });
+                      }}
+                      disabled={isPending}
+                    />
+                    <Label htmlFor="search_local" className="font-medium flex items-center gap-1.5">
+                      <Database size={14} />
+                      ローカルドキュメント
+                      <span className="text-xs font-normal text-gray-500">(アップロード済みファイル)</span>
+                    </Label>
+                  </div>
+
                 </div>
                 <p className="text-xs text-gray-500 mt-1">少なくとも1つの検索プロバイダーを選択してください</p>
               </div>
@@ -782,11 +848,89 @@ export function ResearchForm() {
                           </div>
                         </div>
                       )}
-                    </AccordionContent>
+
+                      {/* ローカルドキュメント設定 */}
+                      {config.available_search_providers?.includes(SearchProviderEnum.LOCAL) && (
+                        <div className="p-4 space-y-3">
+                          <h4 className="font-medium text-sm flex items-center gap-1.5">
+                            <Database size={14} />
+                            ローカルドキュメント設定
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="local_chunk_size" className="text-sm">チャンクサイズ</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider 
+                                  id="local_chunk_size"
+                                  defaultValue={[config.local_search_config?.chunk_size || 10000]} 
+                                  min={1000} 
+                                  max={20000} 
+                                  step={1000} 
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({ 
+                                    local_search_config: { 
+                                      ...config.local_search_config,
+                                      chunk_size: values[0] 
+                                    } 
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-16 text-right">
+                                  {config.local_search_config?.chunk_size || 10000}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="local_chunk_overlap" className="text-sm">オーバーラップ</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider 
+                                  id="local_chunk_overlap"
+                                  defaultValue={[config.local_search_config?.chunk_overlap || 2000]} 
+                                  min={0} 
+                                  max={5000} 
+                                  step={500} 
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({ 
+                                    local_search_config: { 
+                                      ...config.local_search_config,
+                                      chunk_overlap: values[0] 
+                                    } 
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-16 text-right">
+                                  {config.local_search_config?.chunk_overlap || 2000}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded-md flex items-start gap-2 text-sm">
+                            <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-blue-700">使用するファイルは「ドキュメント管理」ページで設定できます。</p>
+                              <a href="/documents" className="text-blue-600 mt-1 inline-block hover:text-blue-800 underline">
+                                ドキュメント管理ページを開く
+                              </a>
+                            </div>
+                          </div>
+                          {/* 有効なファイル一覧を表示 */}
+                          {enabledFiles.length > 0 && (
+                            <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                              <p className="text-sm font-medium text-blue-700 mb-1">使用するファイル ({enabledFiles.length}件)</p>
+                              <ul className="text-xs text-blue-600 space-y-1 pl-5 list-disc">
+                                {enabledFiles.map(file => (
+                                  <li key={file}>{file}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      </AccordionContent>
                   </AccordionItem>
                 </Accordion>
               )}
-              
               {/* デフォルト検索プロバイダー設定 */}
               {config.available_search_providers && config.available_search_providers.length > 0 && (
                 <div className="space-y-3">
