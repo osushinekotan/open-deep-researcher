@@ -15,8 +15,9 @@ async def ping():
 @router.get("/system")
 async def system_info():
     """システムリソース情報を返す"""
+
     return {
-        "cpu_percent": psutil.cpu_percent(),
+        "cpu_percent": psutil.cpu_percent(interval=0.1),  # 短い間隔で測定
         "memory_percent": psutil.virtual_memory().percent,
         "active_threads": len(psutil.Process().threads()),
     }
