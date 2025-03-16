@@ -180,6 +180,7 @@ section_writer_instructions = """Write one section of a research report.
 - If existing section content is populated, synthesize it with the source material.
 - Maximum word count: about {max_words}.
 - Use simple, clear language.
+- Do not write a summary. Write a detailed report section.
 - Use ## for section title (Markdown format).
 - If an image and its description are provided, include them at the appropriate location in the report section.
 - Insert the image using markdown tags. For example: \n`![description](URL)`\n
