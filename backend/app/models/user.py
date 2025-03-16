@@ -6,16 +6,14 @@ class UserCreate(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: str
     username: str
     created_at: str
 
 
 class LoginRequest(BaseModel):
-    user_id: str
+    username: str
 
 
 class LoginResponse(BaseModel):
-    user_id: str
     username: str
     message: str = "ログインに成功しました"

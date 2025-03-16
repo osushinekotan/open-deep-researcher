@@ -20,7 +20,7 @@ class Research(Base):
     __tablename__ = "research"
 
     id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"))
+    user_id = Column(String, ForeignKey("users.username", ondelete="CASCADE"))
     topic = Column(String, nullable=False)
     status = Column(String, nullable=False)
     config = Column(Text)  # JSON形式で保存
@@ -72,8 +72,7 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(String, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False)
+    username = Column(String, primary_key=True, index=True)
     created_at = Column(String, nullable=False)
 
     # リレーションシップ

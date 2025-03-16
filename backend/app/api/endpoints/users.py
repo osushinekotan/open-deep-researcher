@@ -23,40 +23,40 @@ async def login_user(
     login: LoginRequest,
     user_manager: UserManager = Depends(get_user_manager),
 ):
-    """ユーザーIDでログイン"""
-    user = await user_manager.get_user(user_id=login.user_id)
+    """ユーザー名でログイン"""
+    user = await user_manager.get_user(username=login.username)
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりませんでした")
-    return LoginResponse(user_id=user["id"], username=user["username"])
+    return LoginResponse(username=user["username"])
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{username}", response_model=UserResponse)
 async def get_user(
-    user_id: str,
+    username: str,
     user_manager: UserManager = Depends(get_user_manager),
 ):
     """ユーザー情報を取得"""
-    user = await user_manager.get_user(user_id=user_id)
+    user = await user_manager.get_user(username=username)
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりませんでした")
     return user
 
 
-@router.get("/{user_id}/researches")
+@router.get("/{username}/researches")
 async def get_user_researches(
-    user_id: str,
+    username: str,
     user_manager: UserManager = Depends(get_user_manager),
 ):
     """ユーザーのリサーチ一覧を取得"""
-    researches = await user_manager.get_user_researches(user_id=user_id)
+    researches = await user_manager.get_user_researches(username=username)
     return researches
 
 
-@router.get("/{user_id}/documents")
+@router.get("/{username}/documents")
 async def get_user_documents(
-    user_id: str,
+    username: str,
     user_manager: UserManager = Depends(get_user_manager),
 ):
     """ユーザーのドキュメント一覧を取得"""
-    documents = await user_manager.get_user_documents(user_id=user_id)
+    documents = await user_manager.get_user_documents(username=username)
     return documents

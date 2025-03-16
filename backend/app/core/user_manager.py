@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from app.core.document_manager import get_document_manager
@@ -14,7 +13,6 @@ class UserManager:
     async def create_user(self, username: str) -> dict | None:
         """新しいユーザーを作成"""
         try:
-            user_id = str(uuid.uuid4())
             now = datetime.now().isoformat()
 
             with get_db_context() as db:
@@ -24,16 +22,11 @@ class UserManager:
                     return None
 
                 # 新しいユーザーを作成
-                new_user = User(
-                    id=user_id,
-                    username=username,
-                    created_at=now,
-                )
+                new_user = User(username=username, created_at=now)
                 db.add(new_user)
                 db.commit()
 
                 return {
-                    "id": user_id,
                     "username": username,
                     "created_at": now,
                 }
@@ -41,16 +34,15 @@ class UserManager:
             print(f"ユーザー作成中にエラーが発生しました: {e}")
             return None
 
-    async def get_user(self, user_id: str) -> dict | None:
+    async def get_user(self, username: str) -> dict | None:
         """ユーザー情報を取得"""
         try:
             with get_db_context() as db:
-                user = db.query(User).filter(User.id == user_id).first()
+                user = db.query(User).filter(User.username == username).first()
                 if not user:
                     return None
 
                 return {
-                    "id": user.id,
                     "username": user.username,
                     "created_at": user.created_at,
                 }
@@ -58,13 +50,13 @@ class UserManager:
             print(f"ユーザー情報取得中にエラーが発生しました: {e}")
             return None
 
-    async def get_user_researches(self, user_id: str) -> list:
+    async def get_user_researches(self, username: str) -> list:
         """ユーザーのリサーチ一覧を取得"""
-        return await self.research_manager.list_researches(user_id=user_id)
+        return await self.research_manager.list_researches(user_id=username)
 
-    async def get_user_documents(self, user_id: str) -> list:
+    async def get_user_documents(self, username: str) -> list:
         """ユーザーのドキュメント一覧を取得"""
-        return await self.document_manager.list_documents(user_id=user_id)
+        return await self.document_manager.list_documents(user_id=username)
 
 
 _user_manager = None

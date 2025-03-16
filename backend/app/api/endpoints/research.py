@@ -27,7 +27,7 @@ async def start_research(
         research_id=research_id,
         topic=request.topic,
         config=request.config,
-        user_id=request.user_id,  # ユーザーIDを渡す
+        user_id=request.user_id,
     )
 
     return ResearchResponse(
