@@ -269,7 +269,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     max_sections = configurable.max_sections
     planning_provider = configurable.planning_search_provider
     provider_config = get_provider_config(configurable, provider_name=planning_provider)
-    available_providers = [provider.value for provider in configurable.available_search_providers]
+    available_providers = configurable.available_search_providers
 
     # Convert JSON object to string if necessary
     if isinstance(report_structure, dict):
@@ -408,7 +408,7 @@ def human_feedback(
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
-    available_providers = [provider.value for provider in configurable.available_search_providers]
+    available_providers = configurable.available_search_providers
     for section in sections:
         # 不正なプロバイダをフィルタリング
         section.search_options = [provider for provider in section.search_options if provider in available_providers]
@@ -475,7 +475,7 @@ def generate_queries(state: SectionState, config: RunnableConfig):
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
     number_of_queries = configurable.number_of_queries
-    available_providers = [provider.value for provider in configurable.available_search_providers]
+    available_providers = configurable.available_search_providers
     # 利用可能なプロバイダのみをフィルタリング
     search_options = [provider for provider in search_options if provider in available_providers]
     if not search_options:
@@ -836,9 +836,7 @@ def deep_research_planner(state: SectionState, config: RunnableConfig):
         section_content=section.content,
         current_depth=current_depth,
         breadth=breadth,
-        search_providers=", ".join(
-            [provider.value if hasattr(provider, "value") else str(provider) for provider in deep_research_providers]
-        ),
+        search_providers=", ".join(deep_research_providers),
     )
     system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
 
