@@ -416,5 +416,4 @@ async def local_search(
                     "error": str(e),
                 }
             )
-    print(search_docs)
     return deduplicate_and_format_sources(search_docs, max_tokens_per_source=max_tokens_per_source)

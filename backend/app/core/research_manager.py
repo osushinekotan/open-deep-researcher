@@ -398,7 +398,6 @@ class ResearchManager:
             user_config = config.dict()
             configurable = _deep_update(configurable, user_config)
 
-        print(configurable)
         return configurable
 
     def _get_enable_local_document_files(self, user_id: str | None = None) -> list[str]:
