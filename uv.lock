@@ -1872,6 +1872,7 @@ dependencies = [
     { name = "openai" },
     { name = "pandas" },
     { name = "pymupdf" },
+    { name = "pypdf" },
     { name = "tavily-python" },
     { name = "xmltodict" },
 ]
@@ -1901,6 +1902,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.65.4" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pymupdf", specifier = ">=1.25.3" },
+    { name = "pypdf", specifier = ">=5.3.1" },
     { name = "tavily-python", specifier = ">=0.5.1" },
     { name = "xmltodict", specifier = ">=0.14.2" },
 ]
@@ -2510,6 +2512,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/42/ee/3c449b0de061440ba1ac984aa845315e9e2dca0ff2003c5adfc6febff203/pymupdf-1.25.3-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:a5de51efdbe4d486b6c1111c84e8a231cbfb426f3d6ff31ab530ad70e6f39756", size = 21123157 },
     { url = "https://files.pythonhosted.org/packages/83/53/71faaaf91c56f2883b13f3dd849bf2697f012eb35eb7b952d62734cff41f/pymupdf-1.25.3-cp39-abi3-win32.whl", hash = "sha256:bca72e6089f985d800596e22973f79cc08af6cbff1d93e5bda9248326a03857c", size = 15094211 },
     { url = "https://files.pythonhosted.org/packages/09/e0/d72e88a1d5e23aa381fd463057dc3d0fb29090e1e7308a870c334716579c/pymupdf-1.25.3-cp39-abi3-win_amd64.whl", hash = "sha256:4fb357438c9129fbf939b5af85323434df64e36759c399c376b62ad6da95498c", size = 16542949 },
+]
+
+[[package]]
+name = "pypdf"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/5b/67df68ec4b934aae9ca89edfb43a869c5edb3bd504dd275be9e83001d3e9/pypdf-5.3.1.tar.gz", hash = "sha256:0b9b715252b3c60bacc052e6a780e8b742cee9b9a2135f6007bb018e22a5adad", size = 5011845 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f4/0c/75da081f5948e07f373a92087e4808739a3248d308f01c78c9bd4a51defa/pypdf-5.3.1-py3-none-any.whl", hash = "sha256:20ea5b8686faad1b695fda054462b667d5e5f51e25fbbc092f12c5e0bb20d738", size = 302042 },
 ]
 
 [[package]]
