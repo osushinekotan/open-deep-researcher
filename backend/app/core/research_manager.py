@@ -138,8 +138,6 @@ class ResearchManager:
 
         return True
 
-        return True
-
     async def _continue_research(self, research_id: str, feedback: str | None):
         """フィードバック後にリサーチを続行"""
         task = self.research_tasks[research_id]
