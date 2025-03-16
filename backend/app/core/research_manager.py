@@ -253,12 +253,13 @@ class ResearchManager:
                 task["progress"] = 0.3
 
         # 残りの既存コードはそのまま維持
-        elif "setup_local_documents" in event:
-            task["status"] = "initializing_documents"
+        elif "setup_knowledge_base" in event:
+            task["status"] = "setup_knowledge_base"
+            task["progress"] = 0.1
 
         elif "determine_if_question" in event:
             task["status"] = "analyzing_question"
-            task["progress"] = 0.1
+            task["progress"] = 0.15
 
         elif "generate_introduction" in event:
             task["status"] = "writing_introduction"
