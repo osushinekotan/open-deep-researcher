@@ -536,44 +536,55 @@ async def search(state: SectionState, config: RunnableConfig):  # noqa: C901
     search_results_by_provider = {}
     all_urls = []
 
+    # 各プロバイダごとに検索タスクを作成
+    tasks_with_providers = []
     for provider in search_options:
+        queries = search_queries_by_provider.get(provider, [])
+        if not queries:
+            continue
+
+        query_list = [query.search_query for query in queries]
+
+        # プロバイダごとの検索タスクを作成
+        if provider == "tavily":
+            task = web_search(
+                "tavily",
+                query_list,
+                params_to_pass=get_provider_config(configurable, provider),
+                max_tokens_per_source=max_tokens_per_source,
+            )
+        elif provider == "arxiv":
+            task = web_search(
+                "arxiv",
+                query_list,
+                params_to_pass=get_provider_config(configurable, provider),
+                max_tokens_per_source=max_tokens_per_source,
+            )
+        elif provider == "local":
+            task = local_search(
+                query_list,
+                max_tokens_per_source=max_tokens_per_source,
+                **get_provider_config(configurable, provider),
+            )
+        else:
+            continue
+
+        # タスクとプロバイダ名のペアをリストに追加
+        tasks_with_providers.append((provider, task))
+
+    # 全タスクを並列実行
+    search_results_by_provider = {}
+    all_urls = []
+
+    # 並列実行しつつ結果を辞書に格納
+    for provider, task in tasks_with_providers:
         try:
-            queries = search_queries_by_provider.get(provider, [])
-            if not queries:
-                continue
-
-            query_list = [query.search_query for query in queries]
-
-            # プロバイダごとの設定を取得
-            if provider == "tavily":
-                search_result = await web_search(
-                    "tavily",
-                    query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
-                    max_tokens_per_source=max_tokens_per_source,
-                )
-            elif provider == "arxiv":
-                search_result = await web_search(
-                    "arxiv",
-                    query_list,
-                    params_to_pass=get_provider_config(configurable, provider),
-                    max_tokens_per_source=max_tokens_per_source,
-                )
-            elif provider == "local":
-                search_result = await local_search(
-                    query_list,
-                    max_tokens_per_source=max_tokens_per_source,
-                    **get_provider_config(configurable, provider),
-                )
-            else:
-                continue
-
-            search_results_by_provider[provider] = search_result
+            result = await task
+            search_results_by_provider[provider] = result
 
             # URLを収集
-            provider_urls = extract_urls_from_search_results(search_result)
+            provider_urls = extract_urls_from_search_results(result)
             all_urls.extend(provider_urls)
-
         except Exception as e:
             print(f"プロバイダ '{provider}' の検索中にエラーが発生しました: {str(e)}")
             search_results_by_provider[provider] = f"エラー: {str(e)}"
