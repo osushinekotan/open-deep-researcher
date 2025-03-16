@@ -1,14 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { researchService } from '@/services/research-service';
 import { ResearchRequest } from '@/types/api';
+import { useAuthStore } from '@/store/auth-store';
 
 export const useResearchList = () => {
+  const { isAuthenticated, username } = useAuthStore();
+  
   return useQuery({
-    queryKey: ['researches'],
-    queryFn: researchService.listResearches,
+    queryKey: ['researches', username],
+    queryFn: () => {
+      console.log(`Fetching researches for user: ${username}`);
+      if (isAuthenticated && username) {
+        return researchService.getUserResearches(username);
+      }
+      return researchService.listResearches();
+    },
     refetchInterval: 30000, // 30秒ごとに自動更新
   });
 };
+
 
 export const useResearchStatus = (researchId: string) => {
   return useQuery({
@@ -55,9 +65,19 @@ export const useResearchResult = (researchId: string) => {
 
 export const useStartResearch = () => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, username } = useAuthStore();
   
   return useMutation({
-    mutationFn: (request: ResearchRequest) => researchService.startResearch(request),
+    mutationFn: (request: ResearchRequest) => {
+      // ログイン中の場合はユーザーIDを設定
+      if (isAuthenticated && username) {
+        return researchService.startResearch({
+          ...request,
+          user_id: username
+        });
+      }
+      return researchService.startResearch(request);
+    },
     onSuccess: () => {
       // リサーチリストを更新
       queryClient.invalidateQueries({ queryKey: ['researches'] });

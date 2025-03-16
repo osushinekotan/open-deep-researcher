@@ -123,3 +123,21 @@ export interface FeedbackRequest {
   research_id: string;
   feedback?: string;
 }
+
+export interface UserCreate {
+  username: string;
+}
+
+export interface UserResponse {
+  username: string;
+  created_at: string;
+}
+
+export interface LoginRequest {
+  username: string;
+}
+
+export interface LoginResponse {
+  username: string;
+  message?: string;
+}

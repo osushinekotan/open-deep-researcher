@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, BookOpen, Rocket, ArrowRight } from "lucide-react";
+import { LayoutDashboard, BookOpen, Rocket, ArrowRight, LogIn } from "lucide-react";
 
 export default function HomePage() {
   return (

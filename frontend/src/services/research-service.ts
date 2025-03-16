@@ -16,6 +16,7 @@ const API_ENDPOINTS = {
   GET_RESEARCH_RESULT: (id: string) => `/research/${id}/result`,
   DELETE_RESEARCH: (id: string) => `/research/${id}`, // 追加: 削除エンドポイント
   SUBMIT_FEEDBACK: '/feedback/submit',
+  USER_RESEARCHES: (username: string) => `/users/${username}/researches`,
 };
 
 export const researchService = {
@@ -23,6 +24,14 @@ export const researchService = {
   startResearch: async (request: ResearchRequest): Promise<ResearchResponse> => {
     console.log('リサーチ開始リクエスト:', request);
     const response = await apiClient.post(API_ENDPOINTS.START_RESEARCH, request);
+    return response.data;
+  },
+  
+  // ユーザー別のリサーチ一覧を取得
+  getUserResearches: async (username: string): Promise<ResearchStatus[]> => {
+    console.log(`ユーザー ${username} のリサーチ一覧取得`);
+    const endpoint = API_ENDPOINTS.USER_RESEARCHES(username);
+    const response = await apiClient.get(endpoint);
     return response.data;
   },
 
