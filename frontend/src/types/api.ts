@@ -82,7 +82,6 @@ export interface DocumentStatus {
 }
 
 export interface LocalSearchConfig {
-  local_document_path: string;
   chunk_size: number;
   chunk_overlap: number;
   enabled_files?: string[]; 

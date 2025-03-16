@@ -74,7 +74,6 @@ const defaultConfig: ResearchConfig = {
     get_full_documents: true,
   },
   local_search_config: {
-    local_document_path: "",
     chunk_size: 10000,
     chunk_overlap: 2000,
   },
