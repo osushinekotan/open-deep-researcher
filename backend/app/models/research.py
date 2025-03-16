@@ -3,8 +3,6 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.config import DOCUMENTS_DIR
-
 DEFAULT_REPORT_STRUCTURE = """Use this structure to create a report on the user-provided topic:
 Main Body Sections:
    - Each section should focus on a sub-topic of the user-provided topic
@@ -86,10 +84,9 @@ class ResearchConfig(BaseModel):
         "get_full_documents": True,
     }
     local_search_config: dict[str, Any] = {
-        "local_document_path": str(DOCUMENTS_DIR),
         "chunk_size": 10000,
         "chunk_overlap": 2000,
-        # NOTE: db_path, enable_files は research_manager.py で設定
+        # NOTE: db_path, enable_files, local_document_path は research_manager.py で設定
     }
     # 言語設定
     language: str = "japanese"

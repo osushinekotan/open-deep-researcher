@@ -7,7 +7,7 @@ from typing import Any
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
-from app.config import DOCUMENT_METADATA_FILE, DOCUMENTS_DIR, get_research_fts_database
+from app.config import get_document_metadata_file, get_research_fts_database, get_user_documents_dir
 from app.db.models import init_db
 from app.models.research import DEFAULT_REPORT_STRUCTURE, PlanResponse, ResearchConfig, ResearchStatus, SectionModel
 from app.services.research_service import get_research_service
@@ -75,7 +75,7 @@ class ResearchManager:
             # データベースに保存
             self.research_service.save_research(self.research_tasks[research_id])
 
-            configurable = self._create_configurable(config, research_id)
+            configurable = self._create_configurable(config, research_id, user_id=user_id)
 
             # スレッド情報
             thread = {"configurable": configurable}
@@ -329,7 +329,12 @@ class ResearchManager:
                         task["progress"] = 1.0
                         print(f"Found final report in unexpected event format - research {research_id} completed!")
 
-    def _create_configurable(self, config: ResearchConfig | None, research_id: str) -> dict[str, Any]:
+    def _create_configurable(
+        self,
+        config: ResearchConfig | None,
+        research_id: str,
+        user_id: str | None = None,
+    ) -> dict[str, Any]:
         """設定からConfigurableオブジェクトを作成"""
         # デフォルト設定
         configurable = {
@@ -366,11 +371,11 @@ class ResearchManager:
                 "get_full_documents": True,
             },
             "local_search_config": {
-                "local_document_path": str(DOCUMENTS_DIR),
+                "local_document_path": str(get_user_documents_dir(user_id)),
                 "db_path": str(get_research_fts_database(research_id)),
                 "chunk_size": 10000,
                 "chunk_overlap": 2000,
-                "enabled_files": self._get_enable_local_document_files(),
+                "enabled_files": self._get_enable_local_document_files(user_id=user_id),
             },
             # 言語設定
             "language": "japanese",
@@ -394,10 +399,11 @@ class ResearchManager:
         print(configurable)
         return configurable
 
-    def _get_enable_local_document_files(self) -> list[str]:
+    def _get_enable_local_document_files(self, user_id: str | None = None) -> list[str]:
         """ローカルドキュメントの有効なファイルリストを取得"""
-        if DOCUMENT_METADATA_FILE.exists():
-            with open(DOCUMENT_METADATA_FILE) as f:
+        metadata_file = get_document_metadata_file(user_id)
+        if metadata_file.exists():
+            with open(metadata_file) as f:
                 data = json.load(f)
                 enabled_files = data.get("enabled_files", [])
             return enabled_files

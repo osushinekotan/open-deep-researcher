@@ -4,29 +4,20 @@ from datetime import datetime
 
 from fastapi import UploadFile
 
-from app.config import DOCUMENT_METADATA_FILE, DOCUMENTS_DIR
+from app.config import get_document_metadata_file, get_user_documents_dir
 from app.models.document import DocumentStatus
 
 
 class DocumentManager:
-    def __init__(self):
-        self.documents_dir = DOCUMENTS_DIR
-        self.metadata_file = DOCUMENT_METADATA_FILE
-
-        self.documents_dir.mkdir(parents=True, exist_ok=True)
-        self.metadata_file.parent.mkdir(parents=True, exist_ok=True)
-
-        # インデックス情報ファイルが存在しない場合は作成
-        if not self.metadata_file.exists():
-            with open(self.metadata_file, "w") as f:
-                json.dump({"indexed_at": None, "enabled_files": []}, f)
-
     async def upload_documents(self, files: list[UploadFile], user_id: str | None = None) -> list[UploadFile]:
         """ドキュメントをアップロード"""
         uploaded_files = []
+        # ユーザー別のドキュメントディレクトリを取得
+        documents_dir = get_user_documents_dir(user_id)
+        documents_dir.mkdir(parents=True, exist_ok=True)
 
         for file in files:
-            file_path = self.documents_dir / file.filename
+            file_path = documents_dir / file.filename
 
             # ファイルを保存
             with open(file_path, "wb") as buffer:
@@ -41,18 +32,20 @@ class DocumentManager:
         """アップロードされたドキュメントのリストを取得"""
         documents = []
 
+        # ユーザー別のドキュメントディレクトリを取得
+        documents_dir = get_user_documents_dir(user_id)
+        if not documents_dir.exists():
+            return documents
+
         # インデックス情報の読み込み
-        index_info = self._load_metadata()
+        index_info = self._load_metadata(user_id)
         enabled_files = index_info.get("enabled_files", [])
         file_metadata = index_info.get("file_metadata", {})
 
-        for file_path in self.documents_dir.glob("*.*"):
+        for file_path in documents_dir.glob("*.*"):
             if file_path.is_file() and file_path.name != "index_info.json":
                 stat = file_path.stat()
-                file_user_id = file_metadata.get(file_path.name, {}).get("user_id")
-                # filter by user_id
-                if user_id is not None and file_user_id != user_id:
-                    continue
+                file_user_id = file_metadata.get(file_path.name, {}).get("user_id", user_id)
 
                 documents.append(
                     DocumentStatus(
@@ -66,47 +59,62 @@ class DocumentManager:
 
         return documents
 
-    async def delete_document(self, filename: str) -> bool:
+    async def delete_document(self, filename: str, user_id: str | None = None) -> bool:
         """ドキュメントを削除"""
-        file_path = self.documents_dir / filename
+        # ユーザー別のドキュメントディレクトリを取得
+        documents_dir = get_user_documents_dir(user_id)
+        file_path = documents_dir / filename
+
         if not file_path.is_file():
             return False
 
         file_path.unlink()
-        self._remove_from_metadata(filename)
+        self._remove_from_metadata(filename, user_id)
 
         return True
 
-    async def set_document_enabled(self, filename: str, enable: bool) -> bool:
+    async def set_document_enabled(self, filename: str, enable: bool, user_id: str | None = None) -> bool:
         """ドキュメントの使用可否を設定"""
-        file_path = self.documents_dir / filename
+        # ユーザー別のドキュメントディレクトリを取得
+        documents_dir = get_user_documents_dir(user_id)
+        file_path = documents_dir / filename
+
         if not file_path.is_file():
             return False
 
         # インデックス情報を更新
         if enable:
-            self._add_to_metadata(filename)
+            self._add_to_metadata(filename, user_id)
         else:
-            self._remove_from_metadata(filename)
+            self._remove_from_metadata(filename, user_id)
 
         return True
 
-    def _load_metadata(self) -> dict:
+    def _load_metadata(self, user_id: str | None = None) -> dict:
         """インデックス情報を読み込む"""
+        metadata_file = get_document_metadata_file(user_id)
         try:
-            with open(self.metadata_file) as f:
-                return json.load(f)
+            if metadata_file.exists():
+                with open(metadata_file) as f:
+                    return json.load(f)
+            else:
+                # メタデータファイルが存在しない場合は空の情報を作成して保存
+                initial_metadata = {"indexed_at": None, "enabled_files": [], "file_metadata": {}}
+                with open(metadata_file, "w") as f:
+                    json.dump(initial_metadata, f, indent=2)
+                return initial_metadata
         except Exception:
-            return {"enabled_files": []}
+            return {"enabled_files": [], "file_metadata": {}}
 
-    def _save_metadata(self, metadata: dict):
+    def _save_metadata(self, metadata: dict, user_id: str | None = None):
         """インデックス情報を保存"""
-        with open(self.metadata_file, "w") as f:
+        metadata_file = get_document_metadata_file(user_id)
+        with open(metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
 
     def _add_to_metadata(self, filename: str, user_id: str | None = None):
         """インデックス情報にファイルを追加"""
-        metadata = self._load_metadata()
+        metadata = self._load_metadata(user_id)
         enabled_files = metadata.get("enabled_files", [])
         if filename not in enabled_files:
             enabled_files.append(filename)
@@ -117,16 +125,23 @@ class DocumentManager:
         file_metadata[filename] = {"user_id": user_id}
         metadata["file_metadata"] = file_metadata
 
-        self._save_metadata(metadata)
+        self._save_metadata(metadata, user_id)
 
-    def _remove_from_metadata(self, filename: str):
+    def _remove_from_metadata(self, filename: str, user_id: str | None = None):
         """インデックス情報からファイルを削除"""
-        metadata = self._load_metadata()
+        metadata = self._load_metadata(user_id)
         enabled_files = metadata.get("enabled_files", [])
         if filename in enabled_files:
             enabled_files.remove(filename)
             metadata["enabled_files"] = enabled_files
-            self._save_metadata(metadata)
+
+            # ファイルメタデータからも削除
+            file_metadata = metadata.get("file_metadata", {})
+            if filename in file_metadata:
+                del file_metadata[filename]
+            metadata["file_metadata"] = file_metadata
+
+            self._save_metadata(metadata, user_id)
 
 
 _document_manager = None

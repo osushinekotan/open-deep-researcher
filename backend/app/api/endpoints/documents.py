@@ -36,10 +36,11 @@ async def list_documents(
 @router.delete("/{filename}")
 async def delete_document(
     filename: str,
+    user_id: str | None = None,
     document_manager: DocumentManager = Depends(get_document_manager),
 ):
     """ドキュメントを削除"""
-    success = await document_manager.delete_document(filename)
+    success = await document_manager.delete_document(filename, user_id=user_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Document {filename} not found")
     return {"message": f"Document {filename} successfully deleted"}
@@ -49,10 +50,11 @@ async def delete_document(
 async def enable_document(
     filename: str,
     enable: bool,
+    user_id: str | None = None,
     document_manager: DocumentManager = Depends(get_document_manager),
 ):
     """ドキュメントの使用可否を設定"""
-    success = await document_manager.set_document_enabled(filename, enable)
+    success = await document_manager.set_document_enabled(filename, enable, user_id=user_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Document {filename} not found")
     return {"message": f"Document {filename} {'enabled' if enable else 'disabled'} successfully"}

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -8,13 +7,28 @@ load_dotenv(override=True)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DATA_DIR = BASE_DIR / "data"
-DOCUMENTS_DIR = DATA_DIR / "documents"
-DOCUMENT_METADATA_FILE = DOCUMENTS_DIR / "metadata" / "info.json"
+USERS_DIR = DATA_DIR / "users"
 
-DOCUMENT_METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+USERS_DIR.mkdir(parents=True, exist_ok=True)
+
+# 匿名ユーザー用のディレクトリ名
+ANONYMOUS_USER_DIR = "anonymous"
+
+
+def get_user_documents_dir(username: str = None) -> Path:
+    """ユーザー別ドキュメントディレクトリのパスを取得"""
+    user_dir = username if username else ANONYMOUS_USER_DIR
+    documents_dir = USERS_DIR / user_dir / "documents"
+    documents_dir.mkdir(parents=True, exist_ok=True)
+    return documents_dir
+
+
+def get_document_metadata_file(username: str = None) -> Path:
+    """ユーザー別ドキュメントメタデータファイルのパスを取得"""
+    user_dir = username if username else ANONYMOUS_USER_DIR
+    metadata_file = USERS_DIR / user_dir / "info.json"
+    return metadata_file
 
 
 def get_research_fts_database(research_id: str) -> Path:
