@@ -1,4 +1,5 @@
 import asyncio
+import json
 from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
@@ -6,7 +7,7 @@ from typing import Any
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
-from app.config import DOCUMENTS_DIR, FTS_DATABASE
+from app.config import DOCUMENT_METADATA_FILE, DOCUMENTS_DIR, get_research_fts_database
 from app.db.models import init_db
 from app.models.research import DEFAULT_REPORT_STRUCTURE, PlanResponse, ResearchConfig, ResearchStatus, SectionModel
 from app.services.research_service import get_research_service
@@ -67,7 +68,6 @@ class ResearchManager:
             # データベースに保存
             self.research_service.save_research(self.research_tasks[research_id])
 
-            # 設定からConfigurableを作成
             configurable = self._create_configurable(config, research_id)
 
             # スレッド情報
@@ -360,9 +360,10 @@ class ResearchManager:
             },
             "local_search_config": {
                 "local_document_path": str(DOCUMENTS_DIR),
-                "db_path": str(FTS_DATABASE),
+                "db_path": str(get_research_fts_database(research_id)),
                 "chunk_size": 10000,
                 "chunk_overlap": 2000,
+                "enabled_files": self._get_enable_local_document_files(),
             },
             # 言語設定
             "language": "japanese",
@@ -383,7 +384,17 @@ class ResearchManager:
             user_config = config.dict()
             configurable = _deep_update(configurable, user_config)
 
+        print(configurable)
         return configurable
+
+    def _get_enable_local_document_files(self) -> list[str]:
+        """ローカルドキュメントの有効なファイルリストを取得"""
+        if DOCUMENT_METADATA_FILE.exists():
+            with open(DOCUMENT_METADATA_FILE) as f:
+                data = json.load(f)
+                enabled_files = data.get("enabled_files", [])
+            return enabled_files
+        return []
 
     async def get_research_status(self, research_id: str) -> ResearchStatus | None:
         """リサーチの現在のステータスを取得"""

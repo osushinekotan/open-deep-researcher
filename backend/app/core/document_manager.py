@@ -4,24 +4,21 @@ from datetime import datetime
 
 from fastapi import UploadFile
 
-from app.config import DOCUMENTS_DIR, FTS_DATABASE
+from app.config import DOCUMENT_METADATA_FILE, DOCUMENTS_DIR
 from app.models.document import DocumentStatus
-
-INDEX_INFO_FILE = DOCUMENTS_DIR / "metadata" / "index_info.json"
 
 
 class DocumentManager:
     def __init__(self):
         self.documents_dir = DOCUMENTS_DIR
-        self.fts_database = FTS_DATABASE
-        self.index_info_file = INDEX_INFO_FILE
+        self.metadata_file = DOCUMENT_METADATA_FILE
 
         self.documents_dir.mkdir(parents=True, exist_ok=True)
-        self.index_info_file.parent.mkdir(parents=True, exist_ok=True)
+        self.metadata_file.parent.mkdir(parents=True, exist_ok=True)
 
         # インデックス情報ファイルが存在しない場合は作成
-        if not self.index_info_file.exists():
-            with open(self.index_info_file, "w") as f:
+        if not self.metadata_file.exists():
+            with open(self.metadata_file, "w") as f:
                 json.dump({"indexed_at": None, "enabled_files": []}, f)
 
     async def upload_documents(self, files: list[UploadFile]) -> list[UploadFile]:
@@ -38,7 +35,7 @@ class DocumentManager:
             uploaded_files.append(file)
 
             # インデックス情報に追加（デフォルトで有効）
-            self._add_to_index_info(file.filename)
+            self._add_to_metadata(file.filename)
 
         return uploaded_files
 
@@ -47,7 +44,7 @@ class DocumentManager:
         documents = []
 
         # インデックス情報の読み込み
-        index_info = self._load_index_info()
+        index_info = self._load_metadata()
         enabled_files = index_info.get("enabled_files", [])
 
         for file_path in self.documents_dir.glob("*.*"):
@@ -73,7 +70,7 @@ class DocumentManager:
             return False
 
         file_path.unlink()
-        self._remove_from_index_info(filename)
+        self._remove_from_metadata(filename)
 
         return True
 
@@ -85,42 +82,42 @@ class DocumentManager:
 
         # インデックス情報を更新
         if enable:
-            self._add_to_index_info(filename)
+            self._add_to_metadata(filename)
         else:
-            self._remove_from_index_info(filename)
+            self._remove_from_metadata(filename)
 
         return True
 
-    def _load_index_info(self) -> dict:
+    def _load_metadata(self) -> dict:
         """インデックス情報を読み込む"""
         try:
-            with open(self.index_info_file) as f:
+            with open(self.metadata_file) as f:
                 return json.load(f)
         except Exception:
-            return {"indexed_at": None, "enabled_files": []}
+            return {"enabled_files": []}
 
-    def _save_index_info(self, index_info: dict):
+    def _save_metadata(self, metadata: dict):
         """インデックス情報を保存"""
-        with open(self.index_info_file, "w") as f:
-            json.dump(index_info, f, indent=2)
+        with open(self.metadata_file, "w") as f:
+            json.dump(metadata, f, indent=2)
 
-    def _add_to_index_info(self, filename: str):
+    def _add_to_metadata(self, filename: str):
         """インデックス情報にファイルを追加"""
-        index_info = self._load_index_info()
-        enabled_files = index_info.get("enabled_files", [])
+        metadata = self._load_metadata()
+        enabled_files = metadata.get("enabled_files", [])
         if filename not in enabled_files:
             enabled_files.append(filename)
-            index_info["enabled_files"] = enabled_files
-            self._save_index_info(index_info)
+            metadata["enabled_files"] = enabled_files
+            self._save_metadata(metadata)
 
-    def _remove_from_index_info(self, filename: str):
+    def _remove_from_metadata(self, filename: str):
         """インデックス情報からファイルを削除"""
-        index_info = self._load_index_info()
-        enabled_files = index_info.get("enabled_files", [])
+        metadata = self._load_metadata()
+        enabled_files = metadata.get("enabled_files", [])
         if filename in enabled_files:
             enabled_files.remove(filename)
-            index_info["enabled_files"] = enabled_files
-            self._save_index_info(index_info)
+            metadata["enabled_files"] = enabled_files
+            self._save_metadata(metadata)
 
 
 _document_manager = None
