@@ -231,6 +231,7 @@ async def initialize_knowledge_base(
     db_path: str | Path,
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
+    enabled_files: list[str] | None = None,
     **kwargs,
 ) -> Any | None:
     """指定されたディレクトリ内のドキュメントを処理してFTSデータベースを作成
@@ -240,6 +241,7 @@ async def initialize_knowledge_base(
         db_path: SQLiteデータベースを保存するパス（デフォルト: None、指定されない場合は一時ファイルを使用）
         chunk_size: 各チャンクの最大サイズ（文字数）
         chunk_overlap: チャンク間のオーバーラップ（文字数）
+        enabled_files: 有効なファイル名のリスト（指定された場合はそのファイルのみ処理）
 
     Returns:
         データベースパスまたは処理に失敗した場合はNone
@@ -253,6 +255,8 @@ async def initialize_knowledge_base(
 
     print(f"データベースパス: {db_path}")
     print(f"チャンクサイズ: {chunk_size}, オーバーラップ: {chunk_overlap}")
+    if enabled_files:
+        print(f"有効なファイル数: {len(enabled_files)}")
 
     try:
         # レトリーバーを初期化
@@ -261,9 +265,11 @@ async def initialize_knowledge_base(
 
         # ディレクトリ内のすべてのドキュメントを収集
         all_files = []
-        for file_path in doc_path.glob("**/*"):
+        for file_path in doc_path.glob("*"):  # sub directories are not included
             if file_path.is_file() and file_path.suffix.lower() in LOADER_MAPPING:
-                all_files.append(file_path)
+                # 有効なファイルリストが指定されている場合、そのリストにあるファイルのみを処理
+                if enabled_files is None or file_path.name in enabled_files:
+                    all_files.append(file_path)
 
         if not all_files:
             print("読み込み可能なドキュメントが見つかりません。")

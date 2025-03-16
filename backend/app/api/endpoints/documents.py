@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.core.document_manager import DocumentManager, get_document_manager
-from app.models.document import CollectionCreate, CollectionResponse, DocumentListResponse, DocumentUploadResponse
+from app.models.document import DocumentListResponse, DocumentUploadResponse
 
 router = APIRouter()
 
@@ -29,29 +29,26 @@ async def list_documents(document_manager: DocumentManager = Depends(get_documen
     return DocumentListResponse(documents=documents, total=len(documents))
 
 
-@router.post("/collections", response_model=CollectionResponse)
-async def create_collection(
-    collection: CollectionCreate,
-    document_manager: DocumentManager = Depends(get_document_manager),  # noqa
+@router.delete("/{filename}")
+async def delete_document(
+    filename: str,
+    document_manager: DocumentManager = Depends(get_document_manager),
 ):
-    """新しいドキュメントコレクションを作成"""
-    created = await document_manager.create_collection(collection)
-    return created
-
-
-@router.get("/collections", response_model=list[CollectionResponse])
-async def list_collections(document_manager: DocumentManager = Depends(get_document_manager)):  # noqa
-    """ドキュメントコレクションのリストを取得"""
-    return await document_manager.list_collections()
-
-
-@router.delete("/collections/{name}")
-async def delete_collection(
-    name: str,
-    document_manager: DocumentManager = Depends(get_document_manager),  # noqa
-):
-    """ドキュメントコレクションを削除"""
-    success = await document_manager.delete_collection(name)
+    """ドキュメントを削除"""
+    success = await document_manager.delete_document(filename)
     if not success:
-        raise HTTPException(status_code=404, detail=f"Collection {name} not found")
-    return {"message": f"Collection {name} successfully deleted"}
+        raise HTTPException(status_code=404, detail=f"Document {filename} not found")
+    return {"message": f"Document {filename} successfully deleted"}
+
+
+@router.put("/{filename}/enable")
+async def enable_document(
+    filename: str,
+    enable: bool,
+    document_manager: DocumentManager = Depends(get_document_manager),
+):
+    """ドキュメントの使用可否を設定"""
+    success = await document_manager.set_document_enabled(filename, enable)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Document {filename} not found")
+    return {"message": f"Document {filename} {'enabled' if enable else 'disabled'} successfully"}

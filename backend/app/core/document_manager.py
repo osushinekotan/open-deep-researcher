@@ -1,24 +1,28 @@
 import json
 import shutil
 from datetime import datetime
-from typing import Any
 
 from fastapi import UploadFile
 
-from app.config import DOCUMENTS_DIR, VECTOR_STORE_DIR
-from app.models.document import CollectionCreate, CollectionResponse, DocumentStatus
+from app.config import DOCUMENTS_DIR, FTS_DATABASE
+from app.models.document import DocumentStatus
+
+INDEX_INFO_FILE = DOCUMENTS_DIR / "metadata" / "index_info.json"
 
 
 class DocumentManager:
     def __init__(self):
         self.documents_dir = DOCUMENTS_DIR
-        self.vector_store_dir = VECTOR_STORE_DIR
-        self.collections_file = self.documents_dir / "collections.json"
+        self.fts_database = FTS_DATABASE
+        self.index_info_file = INDEX_INFO_FILE
 
-        # コレクション情報ファイルが存在しない場合は作成
-        if not self.collections_file.exists():
-            with open(self.collections_file, "w") as f:
-                json.dump([], f)
+        self.documents_dir.mkdir(parents=True, exist_ok=True)
+        self.index_info_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # インデックス情報ファイルが存在しない場合は作成
+        if not self.index_info_file.exists():
+            with open(self.index_info_file, "w") as f:
+                json.dump({"indexed_at": None, "enabled_files": []}, f)
 
     async def upload_documents(self, files: list[UploadFile]) -> list[UploadFile]:
         """ドキュメントをアップロード"""
@@ -33,14 +37,21 @@ class DocumentManager:
 
             uploaded_files.append(file)
 
+            # インデックス情報に追加（デフォルトで有効）
+            self._add_to_index_info(file.filename)
+
         return uploaded_files
 
     async def list_documents(self) -> list[DocumentStatus]:
         """アップロードされたドキュメントのリストを取得"""
         documents = []
 
+        # インデックス情報の読み込み
+        index_info = self._load_index_info()
+        enabled_files = index_info.get("enabled_files", [])
+
         for file_path in self.documents_dir.glob("*.*"):
-            if file_path.is_file() and file_path.name != "collections.json":
+            if file_path.is_file() and file_path.name != "index_info.json":
                 # ファイル情報を取得
                 stat = file_path.stat()
 
@@ -49,147 +60,67 @@ class DocumentManager:
                         filename=file_path.name,
                         size=stat.st_size,
                         uploaded_at=datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                        processed=self._is_document_processed(file_path.name),
+                        is_enabled=file_path.name in enabled_files,
                     )
                 )
 
         return documents
 
-    def _is_document_processed(self, filename: str) -> bool:
-        """ドキュメントが処理済みかどうかを確認"""
-        # ベクトルストアのメタデータファイルをチェック
-        for metadata_file in self.vector_store_dir.glob("doc_metadata_*.json"):
-            try:
-                with open(metadata_file) as f:
-                    metadata = json.load(f)
-                    if filename in metadata:
-                        return True
-            except Exception:
-                pass
-
-        return False
-
-    async def create_collection(self, collection: CollectionCreate) -> CollectionResponse:
-        """新しいコレクションを作成"""
-        # 既存のコレクションを読み込み
-        collections = self._load_collections()
-
-        # 同名のコレクションがないか確認
-        for existing in collections:
-            if existing["name"] == collection.name:
-                # 既存のコレクションを更新
-                existing["description"] = collection.description
-                self._save_collections(collections)
-                return CollectionResponse(
-                    name=existing["name"],
-                    description=existing["description"],
-                    document_count=len(existing.get("documents", [])),
-                )
-
-        # 新しいコレクションを追加
-        new_collection = {
-            "name": collection.name,
-            "description": collection.description,
-            "created_at": datetime.now().isoformat(),
-            "documents": [],
-        }
-
-        collections.append(new_collection)
-        self._save_collections(collections)
-
-        return CollectionResponse(
-            name=new_collection["name"], description=new_collection["description"], document_count=0
-        )
-
-    async def list_collections(self) -> list[CollectionResponse]:
-        """コレクションのリストを取得"""
-        collections = self._load_collections()
-
-        return [
-            CollectionResponse(
-                name=c["name"], description=c.get("description"), document_count=len(c.get("documents", []))
-            )
-            for c in collections
-        ]
-
-    async def delete_collection(self, name: str) -> bool:
-        """コレクションを削除"""
-        collections = self._load_collections()
-
-        # コレクションを検索
-        for i, collection in enumerate(collections):
-            if collection["name"] == name:
-                # コレクションを削除
-                collections.pop(i)
-                self._save_collections(collections)
-                return True
-
-        return False
-
-    def _load_collections(self) -> list[dict[str, Any]]:
-        """コレクション情報を読み込み"""
-        try:
-            with open(self.collections_file) as f:
-                return json.load(f)
-        except Exception:
-            return []
-
-    def _save_collections(self, collections: list[dict[str, Any]]):
-        """コレクション情報を保存"""
-        with open(self.collections_file, "w") as f:
-            json.dump(collections, f, indent=2)
-
-    async def add_document_to_collection(self, collection_name: str, filename: str) -> bool:
-        """ドキュメントをコレクションに追加"""
-        # ファイルの存在を確認
+    async def delete_document(self, filename: str) -> bool:
+        """ドキュメントを削除"""
         file_path = self.documents_dir / filename
-        if not file_path.exists():
+        if not file_path.is_file():
             return False
 
-        # コレクションを読み込み
-        collections = self._load_collections()
+        file_path.unlink()
+        self._remove_from_index_info(filename)
 
-        # コレクションを検索
-        for collection in collections:
-            if collection["name"] == collection_name:
-                # 既に追加済みでないか確認
-                if filename not in collection.get("documents", []):
-                    if "documents" not in collection:
-                        collection["documents"] = []
-                    collection["documents"].append(filename)
-                    self._save_collections(collections)
-                return True
+        return True
 
-        return False
+    async def set_document_enabled(self, filename: str, enable: bool) -> bool:
+        """ドキュメントの使用可否を設定"""
+        file_path = self.documents_dir / filename
+        if not file_path.is_file():
+            return False
 
-    async def get_collection_documents(self, collection_name: str) -> list[DocumentStatus]:
-        """コレクション内のドキュメントリストを取得"""
-        # コレクションを読み込み
-        collections = self._load_collections()
+        # インデックス情報を更新
+        if enable:
+            self._add_to_index_info(filename)
+        else:
+            self._remove_from_index_info(filename)
 
-        # コレクションを検索
-        for collection in collections:
-            if collection["name"] == collection_name:
-                documents = []
+        return True
 
-                for filename in collection.get("documents", []):
-                    file_path = self.documents_dir / filename
-                    if file_path.exists():
-                        # ファイル情報を取得
-                        stat = file_path.stat()
+    def _load_index_info(self) -> dict:
+        """インデックス情報を読み込む"""
+        try:
+            with open(self.index_info_file) as f:
+                return json.load(f)
+        except Exception:
+            return {"indexed_at": None, "enabled_files": []}
 
-                        documents.append(
-                            DocumentStatus(
-                                filename=filename,
-                                size=stat.st_size,
-                                uploaded_at=datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                                processed=self._is_document_processed(filename),
-                            )
-                        )
+    def _save_index_info(self, index_info: dict):
+        """インデックス情報を保存"""
+        with open(self.index_info_file, "w") as f:
+            json.dump(index_info, f, indent=2)
 
-                return documents
+    def _add_to_index_info(self, filename: str):
+        """インデックス情報にファイルを追加"""
+        index_info = self._load_index_info()
+        enabled_files = index_info.get("enabled_files", [])
+        if filename not in enabled_files:
+            enabled_files.append(filename)
+            index_info["enabled_files"] = enabled_files
+            self._save_index_info(index_info)
 
-        return []
+    def _remove_from_index_info(self, filename: str):
+        """インデックス情報からファイルを削除"""
+        index_info = self._load_index_info()
+        enabled_files = index_info.get("enabled_files", [])
+        if filename in enabled_files:
+            enabled_files.remove(filename)
+            index_info["enabled_files"] = enabled_files
+            self._save_index_info(index_info)
 
 
 _document_manager = None
