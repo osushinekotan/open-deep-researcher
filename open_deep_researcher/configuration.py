@@ -117,6 +117,7 @@ class Configuration:
             "db_path": "tmp/db.sqlite",
             "chunk_size": 10000,
             "chunk_overlap": 2000,
+            "top_k": 5,
         }
     )
 

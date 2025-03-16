@@ -86,6 +86,7 @@ class ResearchConfig(BaseModel):
     local_search_config: dict[str, Any] = {
         "chunk_size": 10000,
         "chunk_overlap": 2000,
+        "top_k": 5,
         # NOTE: db_path, enable_files, local_document_path は research_manager.py で設定
     }
     # 言語設定

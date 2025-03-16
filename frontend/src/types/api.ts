@@ -85,6 +85,7 @@ export interface LocalSearchConfig {
   chunk_size: number;
   chunk_overlap: number;
   enabled_files?: string[]; 
+  top_k: number;
 }
 
 export interface ResearchConfig {

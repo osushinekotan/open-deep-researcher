@@ -376,6 +376,7 @@ class ResearchManager:
                 "db_path": str(get_research_fts_database(research_id)),
                 "chunk_size": 10000,
                 "chunk_overlap": 2000,
+                "top_k": 5,
                 "enabled_files": self._get_enable_local_document_files(user_id=user_id),
             },
             # 言語設定

@@ -76,6 +76,7 @@ const defaultConfig: ResearchConfig = {
   local_search_config: {
     chunk_size: 10000,
     chunk_overlap: 2000,
+    top_k: 5,
   },
   
   // 言語設定

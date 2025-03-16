@@ -857,6 +857,32 @@ export function ResearchForm() {
                             ローカルドキュメント設定
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                          <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="local_top_k" className="text-sm">最大取得件数</Label>
+                              <div className="flex items-center gap-4">
+                                <Slider 
+                                  id="local_top_k"
+                                  defaultValue={[config.local_search_config?.top_k || 5]} 
+                                  min={1} 
+                                  max={10} 
+                                  step={1} 
+                                  className="flex-1"
+                                  onValueChange={(values) => updateConfig({ 
+                                    local_search_config: { 
+                                      ...config.local_search_config,
+                                      top_k: values[0] 
+                                    } 
+                                  })}
+                                  disabled={isPending}
+                                />
+                                <span className="text-sm font-medium w-16 text-right">
+                                  {config.local_search_config?.top_k || 5}
+                                </span>
+                              </div>
+                            </div>
+
+
                             <div className="space-y-2 md:col-span-2">
                               <Label htmlFor="local_chunk_size" className="text-sm">チャンクサイズ</Label>
                               <div className="flex items-center gap-4">
