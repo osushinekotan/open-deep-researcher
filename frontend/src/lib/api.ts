@@ -26,20 +26,30 @@ apiClient.interceptors.request.use(
 // レスポンスインターセプター
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} for ${response.config.url}`);
+    // 成功レスポンスのログ（開発環境でのみ出力）
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`API Response: ${response.status} for ${response.config.url}`);
+    }
     return response;
   },
   (error) => {
-    // エラー情報をより詳細に記録
-    console.error('API Error:', {
-      message: error.message,
+    // エラー情報を安全に記録
+    const errorInfo = {
+      message: error.message || 'Unknown error',
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data,
       url: error.config?.url,
-      fullUrl: error.config?.baseURL + error.config?.url,
       method: error.config?.method?.toUpperCase()
-    });
+    };
+    
+    // 開発環境でのみ詳細なエラーログを出力
+    if (process.env.NODE_ENV === 'development') {
+      // エラー情報を構造化して表示（オブジェクトの展開を避ける）
+      console.log('API Error:', 
+        `${errorInfo.status} ${errorInfo.statusText} - ${errorInfo.message} - ${errorInfo.method} ${errorInfo.url}`
+      );
+    }
+    
     return Promise.reject(error);
   }
 );
