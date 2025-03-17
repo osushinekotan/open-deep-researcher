@@ -35,7 +35,7 @@ class ResearchConfig(BaseModel):
     number_of_queries: int = 2
     max_reflection: int = 2
     max_sections: int = 3
-    request_delay: float = 0.0
+    request_delay: float = 1.0
 
     # 単語数制限
     max_section_words: int = 1000
@@ -44,7 +44,7 @@ class ResearchConfig(BaseModel):
     max_conclusion_words: int = 500
 
     # 深掘り調査設定
-    enable_deep_research: bool = True
+    enable_deep_research: bool = False
     deep_research_depth: int = 1
     deep_research_breadth: int = 2
 
