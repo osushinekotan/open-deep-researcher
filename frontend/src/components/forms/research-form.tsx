@@ -385,9 +385,9 @@ export function ResearchForm() {
                     <div className="flex items-center gap-4">
                       <Slider 
                         defaultValue={[config.max_section_words || 1000]} 
-                        min={500} 
-                        max={2000} 
-                        step={100} 
+                        min={1000} 
+                        max={10000} 
+                        step={500} 
                         className="flex-1"
                         onValueChange={(values) => updateConfig({ max_section_words: values[0] })}
                         disabled={isPending}
@@ -399,15 +399,15 @@ export function ResearchForm() {
                     <Label className="text-sm">サブセクション最大単語数</Label>
                     <div className="flex items-center gap-4">
                       <Slider 
-                        defaultValue={[config.max_subsection_words || 500]} 
-                        min={200} 
-                        max={1000} 
-                        step={50} 
+                        defaultValue={[config.max_subsection_words || 1000]} 
+                        min={1000} 
+                        max={10000} 
+                        step={500} 
                         className="flex-1"
                         onValueChange={(values) => updateConfig({ max_subsection_words: values[0] })}
                         disabled={isPending}
                       />
-                      <span className="text-sm font-medium w-12 text-right">{config.max_subsection_words || 500}</span>
+                      <span className="text-sm font-medium w-12 text-right">{config.max_subsection_words || 1000}</span>
                     </div>
                   </div>
                 </div>
@@ -416,30 +416,30 @@ export function ResearchForm() {
                     <Label className="text-sm">序論最大単語数</Label>
                     <div className="flex items-center gap-4">
                       <Slider 
-                        defaultValue={[config.max_introduction_words || 500]} 
-                        min={200} 
-                        max={1000} 
-                        step={50} 
+                        defaultValue={[config.max_introduction_words || 1000]} 
+                        min={1000} 
+                        max={10000} 
+                        step={500} 
                         className="flex-1"
                         onValueChange={(values) => updateConfig({ max_introduction_words: values[0] })}
                         disabled={isPending}
                       />
-                      <span className="text-sm font-medium w-12 text-right">{config.max_introduction_words || 500}</span>
+                      <span className="text-sm font-medium w-12 text-right">{config.max_introduction_words || 1000}</span>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <Label className="text-sm">結論最大単語数</Label>
                     <div className="flex items-center gap-4">
                       <Slider 
-                        defaultValue={[config.max_conclusion_words || 500]} 
-                        min={200} 
-                        max={1000} 
-                        step={50} 
+                        defaultValue={[config.max_conclusion_words || 1000]} 
+                        min={1000} 
+                        max={10000} 
+                        step={500} 
                         className="flex-1"
                         onValueChange={(values) => updateConfig({ max_conclusion_words: values[0] })}
                         disabled={isPending}
                       />
-                      <span className="text-sm font-medium w-12 text-right">{config.max_conclusion_words || 500}</span>
+                      <span className="text-sm font-medium w-12 text-right">{config.max_conclusion_words || 1000}</span>
                     </div>
                   </div>
                 </div>
