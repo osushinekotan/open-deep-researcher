@@ -1,4 +1,7 @@
 # ---- backend container ----
+# Build this container in root directory
+# e.g. `docker build -f backend/Dockerfile -t uvicorn-backend .`
+
 FROM python:3.11.4-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
