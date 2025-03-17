@@ -4,9 +4,7 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 from app.config import DATA_DIR
 
-DB_DIR = DATA_DIR / "db"
-DB_DIR.mkdir(parents=True, exist_ok=True)
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_DIR}/application.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATA_DIR}/application.db"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
