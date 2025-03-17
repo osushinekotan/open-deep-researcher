@@ -77,7 +77,7 @@ Open Deep Researcher は、最新の拡張性のあるアーキテクチャで�
    ```bash
    cd frontend
    # 依存関係のインストールとサーバーの起動
-   # （フロントエンドのセットアップ手順がここに入ります）
+   npm run dev
    ```
 
 ### LangGraph Studio UI をローカルで実行する
