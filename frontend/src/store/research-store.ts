@@ -33,7 +33,7 @@ const defaultConfig: ResearchConfig = {
   deep_research_breadth: 2,
   
   // フィードバック設定
-  skip_human_feedback: false,
+  skip_human_feedback: true,
   
   // モデル設定
   planner_provider: PlannerProviderEnum.OPENAI,
@@ -67,7 +67,7 @@ const defaultConfig: ResearchConfig = {
   // プロバイダー別の設定
   tavily_search_config: {
     max_results: 5,
-    include_raw_content: false,
+    include_raw_content: true,
   },
   arxiv_search_config: {
     load_max_docs: 5,

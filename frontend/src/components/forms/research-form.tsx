@@ -1078,15 +1078,15 @@ export function ResearchForm() {
                 </InfoTooltip>
                 <div className="flex items-center gap-4">
                   <Slider 
-                    defaultValue={[config.max_tokens_per_source || 8192]} 
-                    min={1024} 
+                    defaultValue={[config.max_tokens_per_source || 1024]} 
+                    min={512} 
                     max={16384} 
                     step={1024} 
                     className="flex-1"
                     onValueChange={(values) => updateConfig({ max_tokens_per_source: values[0] })}
                     disabled={isPending}
                   />
-                  <span className="text-sm font-medium w-16 text-right">{config.max_tokens_per_source || 8192}</span>
+                  <span className="text-sm font-medium w-16 text-right">{config.max_tokens_per_source || 1024}</span>
                 </div>
                 <p className="text-xs text-gray-500">各情報源から抽出する最大トークン数</p>
               </div>
