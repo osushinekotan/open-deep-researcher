@@ -22,10 +22,10 @@ const defaultConfig: ResearchConfig = {
   request_delay: 1.0,
   
   // 単語数制限
-  max_section_words: 1000,
-  max_subsection_words: 500,
-  max_introduction_words: 500,
-  max_conclusion_words: 500,
+  max_section_words: 5000,
+  max_subsection_words: 5000,
+  max_introduction_words: 5000,
+  max_conclusion_words: 5000,
   
   // 深掘り調査設定
   enable_deep_research: true,
@@ -39,19 +39,19 @@ const defaultConfig: ResearchConfig = {
   planner_provider: PlannerProviderEnum.OPENAI,
   planner_model: 'gpt-4o',
   planner_model_config: {
-    max_tokens: 4096
+    max_tokens: 8192
   },
   
   writer_provider: WriterProviderEnum.OPENAI,
-  writer_model: 'gpt-4o-mini',
+  writer_model: 'gpt-4o',
   writer_model_config: {
     max_tokens: 8192
   },
   
   conclusion_writer_provider: WriterProviderEnum.OPENAI,
-  conclusion_writer_model: 'gpt-4o-mini',
+  conclusion_writer_model: 'gpt-4o',
   conclusion_writer_model_config: {
-    max_tokens: 2048
+    max_tokens: 8192
   },
   
   // 検索プロバイダー設定
@@ -62,7 +62,7 @@ const defaultConfig: ResearchConfig = {
   default_search_provider: SearchProviderEnum.TAVILY,
   
   // トークン数制限
-  max_tokens_per_source: 8192,
+  max_tokens_per_source: 512,
   
   // プロバイダー別の設定
   tavily_search_config: {
