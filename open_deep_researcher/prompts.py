@@ -181,10 +181,13 @@ section_writer_instructions = """Write one section of a research report.
 - Maximum word count: about {max_words}.
 - Use simple, clear language.
 - Do not write a summary. Write a detailed report section.
+- Do not write conclusion.
 - Use ## for section title (Markdown format).
 - If an image and its description are provided, include them at the appropriate location in the report section.
 - Insert the image using markdown tags. For example: \n`![description](URL)`\n
 - Only include the image if necessary.
+- Sectioning should be kept to a minimum.
+- Enhance the content of the section.
 </Writing Guidelines>
 
 <Citation Rules>
@@ -351,6 +354,10 @@ deep_research_writer_instructions = """あなたは技術文書作成の専門�
 3. 検索結果に基づいた事実を提示する
 4. 情報源は必ず引用し、以下のルールに従ったインライン引用を使用する
 5. 約 {max_words} 語以内に収める
+6. Do not write a summary. Write a detailed report section.
+7. Do not write conclusion.
+8. Sectioning should be kept to a minimum.
+9. Enhance the content of the section.
 
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
@@ -400,6 +407,7 @@ In both cases:
 - Focus on the most important information
 - Be objective and evidence-based
 - Write in the specified language
+- Do not write `Conclusion` as a section title. Instead, start with the content directly.
 
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.
