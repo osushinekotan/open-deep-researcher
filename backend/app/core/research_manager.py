@@ -1,5 +1,6 @@
 import asyncio
 import json
+import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -17,153 +18,110 @@ from open_deep_researcher.graph import builder
 CHECKPOINTS_DATABASE_URL = f"{DATA_DIR}/checkpoints.db"
 
 
-async def _run_research_async(
-    research_id: str,
-    topic: str,
-    config_dict: dict,
-    user_id: str = None,
-) -> None:
-    """別スレッドで実行される研究処理（非同期）"""
-    try:
-        # データベース接続を初期化
-        init_db()
+class ResearchSession:
+    def __init__(
+        self,
+        research_id: str,
+        topic: str,
+        config_dict: dict,
+        user_id: str | None = None,
+    ):
+        self.research_id = research_id
+        self.topic = topic
+        self.config_dict = config_dict
+        self.user_id = user_id
+        self.feedback_event = threading.Event()  # フィードバック受信を通知するイベント
+        self.feedback_content = None  # フィードバック内容を保持
+        self.is_running = True
+        self.checkpoint_path = None
 
-        # 研究サービスのインスタンスを取得
-        research_service = get_research_service()
-        configurable = _create_configurable(config_dict, research_id, user_id)
+    def run_thread(self):
+        """スレッド内で実行されるメイン関数"""
+        try:
+            # 新しいイベントループを作成
+            event_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(event_loop)
+            event_loop.run_until_complete(self._execute_research_workflow())
 
-        # 永続化されたチェックポインターを使用
-        conn = await aiosqlite.connect(CHECKPOINTS_DATABASE_URL)
-        checkpointer = AsyncSqliteSaver(conn)
-        graph = builder.compile(checkpointer=checkpointer)
-
-        research_data = research_service.get_research(research_id)
-        async for event in graph.astream({"topic": topic}, {"configurable": configurable}, stream_mode="updates"):
-            _process_event(research_id, event, research_service)
-
-            # research data 更新
-            research_data = research_service.get_research(research_id)
-            if not research_data:
-                print(f"{research_id} のデータが見つかりません")
-                break
-
-            # human feedback が必要な場合は一時停止
-            skip_human_feedback = configurable.get("skip_human_feedback", False)
-            if not skip_human_feedback and research_data.get("waiting_for_feedback", False):
-                research_data["status"] = "waiting_for_feedback"
+        except Exception as e:
+            print(f"run_thread error: {e}")
+            research_service = get_research_service()
+            research_data = research_service.get_research(self.research_id)
+            if research_data:
+                research_data["status"] = "error"
+                research_data["error"] = f"スレッド実行エラー: {str(e)}"
                 research_service.save_research(research_data)
-                break
 
-    except Exception as e:
-        research_service = get_research_service()
-        research_data = research_service.get_research(research_id)
-        if research_data:
-            research_data["status"] = "error"
-            research_data["error"] = str(e)
-            research_service.save_research(research_data)
-
-
-def _run_research_thread(
-    research_id: str,
-    topic: str,
-    config_dict: dict,
-    user_id: str = None,
-) -> None:
-    """スレッド内で asyncio イベントループを実行"""
-    try:
-        asyncio.run(_run_research_async(research_id, topic, config_dict, user_id))
-    except Exception as e:
-        research_service = get_research_service()
-        research_data = research_service.get_research(research_id)
-        if research_data:
-            research_data["status"] = "error"
-            research_data["error"] = f"スレッド実行エラー: {str(e)}"
-            research_service.save_research(research_data)
-
-
-async def _continue_research_async(
-    research_id: str,
-    feedback: str = None,
-) -> None:
-    """フィードバック後に研究を継続するための非同期関数"""
-    try:
+    async def _execute_research_workflow(self):
         init_db()
 
         research_service = get_research_service()
-        research_data = research_service.get_research(research_id)
-        if not research_data:
-            print(f"{research_id} のデータが見つかりません")
-            return
+        configurable = _create_configurable(self.config_dict, self.research_id, self.user_id)
 
-        # 状態を更新
-        research_data["status"] = "processing_feedback"
-        research_service.save_research(research_data)
-
-        # 設定を再作成
-        config_dict = research_data.get("config", {})
-        user_id = research_data.get("user_id")
-        configurable = _create_configurable(config_dict, research_id, user_id)
-
-        conn = await aiosqlite.connect(CHECKPOINTS_DATABASE_URL)
+        conn = await aiosqlite.connect(str(CHECKPOINTS_DATABASE_URL))
         checkpointer = AsyncSqliteSaver(conn)
         graph = builder.compile(checkpointer=checkpointer)
 
-        # フィードバックに基づいてリサーチを続行
+        try:
+            # 初期実行
+            await self._run_initial_stream(graph, research_service, configurable)
+            while self.is_running:  # feedback
+                research_data = research_service.get_research(self.research_id)
+                if not research_data:
+                    break
+
+                if research_data["status"] == "completed":
+                    break
+
+                print(f"{self.research_id} waiting for feedback...")
+                self.feedback_event.clear()
+                self.feedback_event.wait()
+
+                feedback = self.feedback_content
+                self.feedback_content = None
+                await self._process_feedback(graph, feedback, research_service, configurable)
+        finally:
+            await conn.close()
+
+    async def _run_initial_stream(self, graph, research_service, configurable):
+        """初期研究実行を処理"""
+        async for event in graph.astream({"topic": self.topic}, {"configurable": configurable}, stream_mode="updates"):
+            _process_event(self.research_id, event, research_service)
+            research_data = research_service.get_research(self.research_id)
+            if not research_data:
+                return
+
+    async def _process_feedback(self, graph, feedback, research_service, configurable):
+        """フィードバックの処理と継続実行"""
+        research_data = research_service.get_research(self.research_id)
+        if research_data:
+            research_data["status"] = "processing_feedback"
+            research_service.save_research(research_data)
+
         if feedback is None or feedback.strip() == "":
-            command = Command(resume=True)  # フィードバックが提供されない場合は再開
-            configurable["skip_human_feedback"] = True  # 強制的にフィードバックをスキップ
-            print("フィードバックなし - 研究を再開します")
+            command = Command(resume=True)  # フィードバックなし
         else:
             command = Command(resume=feedback)
-            print(f"フィードバックを処理中: {feedback[:100]}...")
 
         async for event in graph.astream(command, {"configurable": configurable}, stream_mode="updates"):
-            _process_event(research_id, event, research_service)
+            _process_event(self.research_id, event, research_service)
 
-            research_data = research_service.get_research(research_id)
+            research_data = research_service.get_research(self.research_id)
             if not research_data:
-                print(f"{research_id} のデータが見つかりません")
-                break
+                return
 
-    except Exception as e:
-        research_service = get_research_service()
-        research_data = research_service.get_research(research_id)
-        if research_data:
-            research_data["status"] = "error"
-            research_data["error"] = str(e)
-            research_service.save_research(research_data)
-
-
-# スレッドでasyncio実行ループを管理する関数
-def _continue_research_thread(
-    research_id: str,
-    feedback: str = None,
-) -> None:
-    """スレッド内でasyncioイベントループを実行"""
-    try:
-        asyncio.run(_continue_research_async(research_id, feedback))
-    except Exception as e:
-        print(f"continue_research_thread error（{research_id}）: {e}")
-
-        research_service = get_research_service()
-        research_data = research_service.get_research(research_id)
-        if research_data:
-            research_data["status"] = "error"
-            research_data["error"] = f"フィードバック処理エラー: {str(e)}"
-            research_service.save_research(research_data)
+    def add_feedback(self, feedback):
+        """フィードバックを設定し、イベントを通知"""
+        self.feedback_content = feedback
+        self.feedback_event.set()  # 待機中のスレッドに通知
 
 
 def _process_event(research_id: str, event: dict, research_service) -> None:  # noqa: C901
     """イベントを処理してステータスを更新"""
-    # 研究データを取得
     research_data = research_service.get_research(research_id)
     if not research_data:
         print(f"{research_id} のデータが見つかりません")
         return
-
-    # フィードバックスキップ設定を取得
-    config = research_data.get("config", {})
-    skip_human_feedback = config.get("skip_human_feedback", False)
 
     # TODO: refactoring
     if "generate_report_plan" in event:
@@ -180,44 +138,13 @@ def _process_event(research_id: str, event: dict, research_service) -> None:  # 
                 for s in sections
             ]
 
-            # skip_human_feedback が False の場合のみフィードバック待ち状態に設定
-            if not skip_human_feedback:
-                research_data["waiting_for_feedback"] = True
-                research_data["status"] = "waiting_for_feedback"
-            else:
-                research_data["status"] = "executing"
+    elif "__interrupt__" in event:
+        research_data["waiting_for_feedback"] = True
+        research_data["status"] = "waiting_for_feedback"
 
     elif "human_feedback" in event:
-        if isinstance(event["human_feedback"], dict):
-            if "updated_plan" in event["human_feedback"]:
-                updated_plan = event["human_feedback"]["updated_plan"]
-                if updated_plan and isinstance(updated_plan, dict) and "sections" in updated_plan:
-                    sections = updated_plan["sections"]
-                    research_data["sections"] = [
-                        {
-                            "name": s.get("name", ""),
-                            "description": s.get("description", ""),
-                            "content": s.get("content", ""),
-                            "search_options": s.get("search_options", []),
-                        }
-                        for s in sections
-                    ]
-                    # 再度フィードバックを待つ
-                    research_data["waiting_for_feedback"] = True
-                    research_data["status"] = "waiting_for_feedback"
-                else:
-                    research_data["status"] = "executing"
-            else:
-                # フィードバックが処理されたが、プランの更新がない場合は実行に進む
-                research_data["status"] = "processing_sections"
-                research_data["progress"] = 0.3
-        else:
-            # human_feedback が辞書でない場合（None等）は実行に進む
-            print("Human feedback event is not a dictionary, continuing execution")
-            research_data["status"] = "processing_sections"
-            research_data["progress"] = 0.3
+        research_data["status"] = "human_feedback"
 
-    # 残りの既存コードはそのまま維持
     elif "setup_knowledge_base" in event:
         research_data["status"] = "setup_knowledge_base"
         research_data["progress"] = 0.1
@@ -261,9 +188,7 @@ def _process_event(research_id: str, event: dict, research_service) -> None:  # 
             research_data["progress"] = min(0.8, completed / total_sections) if total_sections > 0 else 0
 
         if "all_urls" in event["build_section_with_research"]:
-            # URLを追加（重複は追って対処する）
             all_urls = research_data.get("all_urls", []) + event["build_section_with_research"]["all_urls"]
-            # 重複を削除
             research_data["all_urls"] = list(set(all_urls))
 
     elif "gather_completed_sections" in event:
@@ -389,9 +314,8 @@ class ResearchManager:
         init_db()
 
         self.research_service = get_research_service()
-        self.thread_pool = ThreadPoolExecutor(max_workers=3)  # 同時実行数を制限
-
-        self.running_threads = {}
+        self.thread_pool = ThreadPoolExecutor(max_workers=5)  # 同時実行数制限
+        self.sessions = {}  # research id -> ResearchSessionのマッピング
 
     async def execute_research(
         self,
@@ -425,10 +349,15 @@ class ResearchManager:
             # データベースに保存
             self.research_service.save_research(research_data)
 
+            # セッションを作成して開始
             config_dict = config.dict() if config else {}
-            future = self.thread_pool.submit(_run_research_thread, research_id, topic, config_dict, user_id)
-            self.running_threads[research_id] = future
+            session = ResearchSession(research_id, topic, config_dict, user_id)
+            self.sessions[research_id] = session
 
+            # ThreadPoolExecutorで実行
+            future = self.thread_pool.submit(session.run_thread)
+
+            # 完了を監視するタスクを作成
             asyncio.create_task(self._wait_for_completion(research_id, future))
 
             return True
@@ -447,7 +376,7 @@ class ResearchManager:
             print(f"execute_research error: {traceback.format_exc()}")
             return False
 
-    async def _wait_for_completion(self, research_id: str, future):
+    async def _wait_for_completion(self, research_id, future):
         """スレッドの完了を待つ"""
         try:
             await asyncio.to_thread(future.result)
@@ -458,15 +387,17 @@ class ResearchManager:
                 research_data["status"] = "error"
                 research_data["error"] = str(e)
                 self.research_service.save_research(research_data)
-
         finally:
-            # 処理が完了したらスレッド追跡から削除
-            if research_id in self.running_threads:
-                del self.running_threads[research_id]
+            # 処理が完了したらセッション追跡から削除
+            if research_id in self.sessions:
+                del self.sessions[research_id]
 
-    async def submit_feedback(self, research_id: str, feedback: str = None) -> bool:
-        """研究プランに対するフィードバックを送信"""
-        # データベースから研究情報をロード
+    async def submit_feedback(self, research_id, feedback=None):
+        """research plan に対するフィードバックを送信"""
+        session = self.sessions.get(research_id)
+        if not session:
+            return False
+
         research_data = self.research_service.get_research(research_id)
         if not research_data:
             return False
@@ -474,15 +405,13 @@ class ResearchManager:
         if research_data["status"] != "waiting_for_feedback" or not research_data.get("waiting_for_feedback"):
             return False
 
+        # フィードバック処理中に状態を更新
         research_data["waiting_for_feedback"] = False
         research_data["status"] = "processing_feedback"
-
         self.research_service.save_research(research_data)
 
-        future = self.thread_pool.submit(_continue_research_thread, research_id, feedback)
-        self.running_threads[research_id] = future
-
-        asyncio.create_task(self._wait_for_completion(research_id, future))
+        # フィードバックをセッションに送信
+        session.add_feedback(feedback)
 
         return True
 
@@ -590,18 +519,20 @@ class ResearchManager:
 
         return result
 
-    async def delete_research(self, research_id: str) -> bool:
+    async def delete_research(self, research_id):
         """研究を削除する"""
-        # 実行中のスレッドがあれば終了を試みる
-        if research_id in self.running_threads:
-            future = self.running_threads[research_id]
-            future.cancel()
-            del self.running_threads[research_id]
+        # セッションが存在すれば、削除し、フィードバックで終了を促す
+        session = self.sessions.pop(research_id, None)
+        if session:
+            try:
+                # 終了シグナルとして None をフィードバックとして送信
+                session.add_feedback(None)
+            except Exception:
+                pass
 
         return self.research_service.delete_research(research_id)
 
     def __del__(self):
-        """デストラクタ - スレッドプールをクリーンアップ"""
         if hasattr(self, "thread_pool"):
             self.thread_pool.shutdown(wait=False)
 
