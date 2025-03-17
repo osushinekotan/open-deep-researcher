@@ -54,15 +54,24 @@ class ResearchConfig(BaseModel):
     # モデル設定
     planner_provider: PlannerProviderEnum = PlannerProviderEnum.OPENAI
     planner_model: str = "gpt-4o-mini"
-    planner_model_config: dict[str, Any] | None = None
+    planner_model_config: dict[str, Any] | None = {
+        "max_tokens": 8192,
+        "temperature": 0.0,
+    }
 
     writer_provider: WriterProviderEnum = WriterProviderEnum.OPENAI
     writer_model: str = "gpt-4o-mini"
-    writer_model_config: dict[str, Any] | None = None
+    writer_model_config: dict[str, Any] | None = {
+        "max_tokens": 8192,
+        "temperature": 0.0,
+    }
 
     conclusion_writer_provider: WriterProviderEnum = WriterProviderEnum.OPENAI
     conclusion_writer_model: str = "gpt-4o-mini"
-    conclusion_writer_model_config: dict[str, Any] | None = None
+    conclusion_writer_model_config: dict[str, Any] | None = {
+        "max_tokens": 8192,
+        "temperature": 0.0,
+    }
 
     # 検索プロバイダー設定
     introduction_search_provider: SearchProviderEnum = SearchProviderEnum.TAVILY
@@ -72,7 +81,7 @@ class ResearchConfig(BaseModel):
     default_search_provider: SearchProviderEnum = SearchProviderEnum.TAVILY
 
     # トークン数制限
-    max_tokens_per_source: int = 8192
+    max_tokens_per_source: int = 512
 
     # 検索プロバイダー別の設定
     tavily_search_config: dict[str, Any] | None = {

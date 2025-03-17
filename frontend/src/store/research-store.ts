@@ -39,19 +39,22 @@ const defaultConfig: ResearchConfig = {
   planner_provider: PlannerProviderEnum.OPENAI,
   planner_model: 'gpt-4o',
   planner_model_config: {
-    max_tokens: 8192
+    max_tokens: 8192,
+    temperature: 0.0,
   },
   
   writer_provider: WriterProviderEnum.OPENAI,
   writer_model: 'gpt-4o',
   writer_model_config: {
-    max_tokens: 8192
+    max_tokens: 8192,
+    temperature: 0.0,
   },
   
   conclusion_writer_provider: WriterProviderEnum.OPENAI,
   conclusion_writer_model: 'gpt-4o',
   conclusion_writer_model_config: {
-    max_tokens: 8192
+    max_tokens: 8192,
+    temperature: 0.0,
   },
   
   // 検索プロバイダー設定
