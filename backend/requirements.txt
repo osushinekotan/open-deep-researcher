@@ -11,3 +11,4 @@ passlib
 pydantic[email]
 psutil
 aiosqlite
+langgraph-checkpoint-sqlite

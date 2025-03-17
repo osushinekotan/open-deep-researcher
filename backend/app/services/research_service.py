@@ -35,7 +35,13 @@ class ResearchService:
                     existing_research.conclusion = research_data.get("conclusion")
                     existing_research.final_report = research_data.get("final_report")
                     existing_research.completed_at = research_data.get("completed_at")
-                    existing_research.user_id = research_data.get("user_id")  # ユーザーIDを追加
+                    existing_research.user_id = research_data.get("user_id")
+
+                    # 既存のセクションをすべて削除（再作成する）
+                    db.query(Section).filter(Section.research_id == research_data["id"]).delete()
+
+                    # 既存のURLをすべて削除（再作成する）
+                    db.query(URL).filter(URL.research_id == research_data["id"]).delete()
                 else:
                     # 新規リサーチを作成
                     new_research = Research(
@@ -52,7 +58,7 @@ class ResearchService:
                         introduction=research_data.get("introduction"),
                         conclusion=research_data.get("conclusion"),
                         final_report=research_data.get("final_report"),
-                        user_id=research_data.get("user_id"),  # ユーザーIDを追加
+                        user_id=research_data.get("user_id"),
                     )
                     db.add(new_research)
 
@@ -124,6 +130,8 @@ class ResearchService:
                     "introduction": research.introduction,
                     "conclusion": research.conclusion,
                     "final_report": research.final_report,
+                    "completed_at": research.completed_at,
+                    "user_id": research.user_id,
                 }
 
                 # configをJSONから変換
@@ -199,7 +207,7 @@ class ResearchService:
                     # 完了済みセクション数と全セクション数を取得
                     completed_count = (
                         db.query(Section)
-                        .filter(Section.research_id == research.id, Section.is_completed is True)
+                        .filter(Section.research_id == research.id, Section.is_completed.is_(True))
                         .count()
                     )
 

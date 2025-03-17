@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
@@ -7,9 +6,6 @@ from app.core.research_manager import ResearchManager, get_research_manager
 from app.models.research import PlanResponse, ResearchRequest, ResearchResponse, ResearchStatus
 
 router = APIRouter()
-
-# 進行中のリサーチを保存する辞書
-research_tasks: dict[str, dict[str, Any]] = {}
 
 
 @router.post("/start", response_model=ResearchResponse)
@@ -21,7 +17,6 @@ async def start_research(
     """新しいリサーチを開始"""
     research_id = str(uuid.uuid4())
 
-    # バックグラウンドタスクとしてリサーチを実行
     background_tasks.add_task(
         research_manager.execute_research,
         research_id=research_id,
@@ -42,7 +37,7 @@ async def start_research(
 @router.get("/{research_id}/status", response_model=ResearchStatus)
 async def get_research_status(
     research_id: str,
-    research_manager: ResearchManager = Depends(get_research_manager),  # noqa
+    research_manager: ResearchManager = Depends(get_research_manager),
 ):
     """リサーチの現在のステータスを取得"""
     status = await research_manager.get_research_status(research_id)
@@ -54,7 +49,7 @@ async def get_research_status(
 @router.get("/{research_id}/plan", response_model=PlanResponse)
 async def get_research_plan(
     research_id: str,
-    research_manager: ResearchManager = Depends(get_research_manager),  # noqa
+    research_manager: ResearchManager = Depends(get_research_manager),
 ):
     """リサーチプランを取得（フィードバック用）"""
     plan = await research_manager.get_research_plan(research_id)
@@ -66,7 +61,7 @@ async def get_research_plan(
 @router.get("/{research_id}/result")
 async def get_research_result(
     research_id: str,
-    research_manager: ResearchManager = Depends(get_research_manager),  # noqa
+    research_manager: ResearchManager = Depends(get_research_manager),
 ):
     """完了したリサーチの結果を取得"""
     result = await research_manager.get_research_result(research_id)
@@ -87,7 +82,7 @@ async def list_researches(
 @router.delete("/{research_id}")
 async def delete_research(
     research_id: str,
-    research_manager: ResearchManager = Depends(get_research_manager),  # noqa
+    research_manager: ResearchManager = Depends(get_research_manager),
 ):
     """リサーチを削除"""
     success = await research_manager.delete_research(research_id)
