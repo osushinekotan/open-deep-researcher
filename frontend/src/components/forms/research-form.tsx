@@ -995,7 +995,7 @@ export function ResearchForm() {
                   <Slider 
                     defaultValue={[config.number_of_queries || 2]} 
                     min={1} 
-                    max={5} 
+                    max={10} 
                     step={1} 
                     className="flex-1"
                     onValueChange={(values) => updateConfig({ number_of_queries: values[0] })}
