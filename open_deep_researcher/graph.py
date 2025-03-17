@@ -460,7 +460,11 @@ def human_feedback(
     # If the user provides feedback, regenerate the report plan
     elif isinstance(feedback, str):
         # Treat this as feedback
-        return Command(goto="generate_report_plan", update={"feedback_on_report_plan": feedback})
+        feedback_prompt = (
+            f"<original_report_plan>\n{sections_str}\n</original_report_plan>\n"
+            f"<human_feedback>\n{feedback}\n</human_feedback>"
+        )
+        return Command(goto="generate_report_plan", update={"feedback_on_report_plan": feedback_prompt})
     else:
         raise TypeError(f"Interrupt value of type {type(feedback)} is not supported.")
 
