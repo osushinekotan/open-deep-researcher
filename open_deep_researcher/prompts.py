@@ -201,6 +201,9 @@ section_writer_instructions = """
 - Do not write conclusion.
 - 必要な情報に加え、より深い洞察を提供することを目指してください。数値情報や具体的な例を使用して、情報を裏付けてください。
 - より詳しく、より具体的に書くことを心がけてください。できるだけ重厚感のあるレポートが望ましいです。
+- If an image and its description are provided, include them at the appropriate location in the report section.
+- Insert the image using markdown tags. For example: \n`![description](URL)`\n
+- Only include the image if necessary.
 </Task>
 
 <Citation Rules>
@@ -349,6 +352,9 @@ deep_research_writer_instructions = """あなたは技術文書作成の専門�
 - Do not write conclusion.
 - 必要な情報に加え、より深い洞察を提供することを目指してください。数値情報や具体的な例を使用して、情報を裏付けてください。
 - より詳しく、より具体的に書くことを心がけてください。できるだけ重厚感のあるレポートが望ましいです。
+- If an image and its description are provided, include them at the appropriate location in the report section.
+- Insert the image using markdown tags. For example: \n`![description](URL)`\n
+- Only include the image if necessary.
 </Task>
 
 <Citation Rules>
