@@ -111,8 +111,7 @@ For example, a good report structure might look like:
 Each section should have the fields:
 
 - Name - Name for this section of the report.
-- Description - Brief overview of the main topics covered in this section.
-- Research - Whether to perform web research for this section of the report. (default: True, but `conclusion`, `summary`. or `introduction` sections should be False)
+- Description - Brief overview of the main topics covered in this section. 細かい指定は不要であり、「特に xxx について」などは不要です。
 - Search Options - List of search providers to use for this section. Choose from the available providers listed above.
   {search_provider_descriptions}
 - Content - The content of the section, which you will leave blank for now.
@@ -140,6 +139,10 @@ query_writer_instructions = """You are an expert technical writer crafting targe
 {topic}
 </Report topic>
 
+<Section name>
+{section_name}
+</Section name>
+
 <Section topic>
 {section_topic}
 </Section topic>
@@ -149,7 +152,9 @@ query_writer_instructions = """You are an expert technical writer crafting targe
 </Search provider>
 
 <Task>
-Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information above the section topic, specifically optimized for the **{search_provider}** search engine.
+- Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information above the section topic, specifically optimized for the **{search_provider}** search engine.
+- 異なる概念や具体を一つのクエリに含めるのではなく、それぞれのクエリに分けることで情報の質を高めることができます。
+- Section name に関連する情報を収集するために必要な検索クエリを生成してください。
 
 Customize your queries based on the search provider:
 
@@ -165,48 +170,9 @@ Make the queries specific enough to find high-quality, relevant sources.
 """
 
 
-section_writer_instructions = """Write one section of a research report.
+section_writer_instructions = """
+あなたは技術文書作成の専門家です。以下の情報を使用して、レポートのセクションを作成してください。
 
-<Task>
-1. Review the report topic, section name, and section topic carefully.
-2. If present, review any existing section content.
-3. Then, look at the provided Source material.
-4. Decide the sources that you will use to write the report section.
-5. Write the report section with inline citations.
-</Task>
-
-<Writing Guidelines>
-- If existing section content is not populated, write from scratch.
-- If existing section content is populated, synthesize it with the source material.
-- Maximum word count: about {max_words}.
-- Use simple, clear language.
-- Do not write a summary. Write a detailed report section.
-- Do not write conclusion.
-- Use ## for section title (Markdown format).
-- If an image and its description are provided, include them at the appropriate location in the report section.
-- Insert the image using markdown tags. For example: \n`![description](URL)`\n
-- Only include the image if necessary.
-- Sectioning should be kept to a minimum.
-- Enhance the content of the section.
-</Writing Guidelines>
-
-<Citation Rules>
-- Use inline citations by embedding links in Markdown format: `[text](URL)`.
-- Each citation should directly correspond to a source URL.
-- For **local documents (not website link URLs)**, **do not** embed the citation as a link. Instead, include only the reference text.
-- Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
-- Ensure all citations are naturally integrated into the sentence.
-</Citation Rules>
-
-<Final Check>
-1. Verify that EVERY claim is grounded in the provided Source material and has an appropriate citation.
-2. Confirm each citation is used correctly and corresponds to the right source.
-3. Verify that citations are naturally integrated into the text.
-</Final Check>
-"""
-
-
-section_writer_inputs = """
 <Report topic>
 {topic}
 </Report topic>
@@ -222,6 +188,31 @@ section_writer_inputs = """
 <Existing section content (if populated)>
 {section_content}
 </Existing section content>
+
+<Task>
+提供された検索結果を使用して、このトピックに関する詳細なセクションを作成してください。
+セクションは以下の特性を持つべきです：
+- マークダウン形式で、## レベルのヘッダー（セクションタイトル）から始める
+- 明確で簡潔な表現を使用する
+- 検索結果に基づいた事実を提示する
+- 情報源は必ず引用し、以下のルールに従ったインライン引用を使用する
+- 約 {max_words} 語以内に収める
+- Do not write a summary. Write a detailed report section.
+- Do not write conclusion.
+- 必要な情報に加え、より深い洞察を提供することを目指してください。数値情報や具体的な例を使用して、情報を裏付けてください。
+- より詳しく、より具体的に書くことを心がけてください。できるだけ重厚感のあるレポートが望ましいです。
+</Task>
+
+<Citation Rules>
+- Use inline citations by embedding links in Markdown format: `[text](URL)`.
+- Each citation should directly correspond to a source URL.
+- For **local documents (not website link URLs)**, **do not** embed the citation as a link. Instead, include only the reference text.
+- Avoid using superscript numbers `[1]`, `[2]`, etc., as they can make the text harder to read.
+- Ensure all citations are naturally integrated into the sentence.
+</Citation Rules>
+
+サブセクションは元のセクションの一部として読めるようになっていることが重要です。
+引用リストや「出典」セクションは含めないでください。引用はすべて本文中に埋め込んでください。
 
 <Source material>
 {context}
@@ -349,15 +340,16 @@ deep_research_writer_instructions = """あなたは技術文書作成の専門�
 <Task>
 提供された検索結果を使用して、このサブトピックに関する詳細なサブセクションを作成してください。
 サブセクションは以下の特性を持つべきです：
-1. マークダウン形式で、### レベルのヘッダー（サブセクションタイトル）から始める
-2. 明確で簡潔な表現を使用する
-3. 検索結果に基づいた事実を提示する
-4. 情報源は必ず引用し、以下のルールに従ったインライン引用を使用する
-5. 約 {max_words} 語以内に収める
-6. Do not write a summary. Write a detailed report section.
-7. Do not write conclusion.
-8. Sectioning should be kept to a minimum.
-9. Enhance the content of the section.
+- マークダウン形式で、### レベルのヘッダー（サブセクションタイトル）から始める
+- 明確で簡潔な表現を使用する
+- 検索結果に基づいた事実を提示する
+- 情報源は必ず引用し、以下のルールに従ったインライン引用を使用する
+- 約 {max_words} 語以内に収める
+- Do not write a summary. Write a detailed report section.
+- Do not write conclusion.
+- 必要な情報に加え、より深い洞察を提供することを目指してください。数値情報や具体的な例を使用して、情報を裏付けてください。
+- より詳しく、より具体的に書くことを心がけてください。できるだけ重厚感のあるレポートが望ましいです。
+</Task>
 
 <Citation Rules>
 - Use inline citations by embedding links in Markdown format: `[text](URL)`.

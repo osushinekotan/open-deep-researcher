@@ -22,7 +22,6 @@ from open_deep_researcher.prompts import (
     report_planner_instructions,
     report_planner_query_writer_instructions,
     section_grader_instructions,
-    section_writer_inputs,
     section_writer_instructions,
 )
 from open_deep_researcher.retriever.local.full_text_search import initialize_knowledge_base, local_search
@@ -56,10 +55,14 @@ PROVIDER_DESCRIPTIONS = {
 QUERY_GNERATION_DESCRIPTION = {
     "tavily": """
 <Tavily>
-- Natural language focus: Use natural sentence expressions that convey the context of the search subject.
-- Utilization of keywords and synonyms: Include main keywords as well as related synonyms and technical terms.
-- Concise and clear: Avoid redundant expressions; state the core information clearly.
-- Context-dependent expression: Choose expressions suited to the specific field or theme to accurately convey the intended meaning.
+* 一般的なウェブ検索
+* 一般的で包括的なキーワードカバレッジを持つクエリを作成
+* 複数の関連概念をAND検索できるようなキーワードの組み合わせを使用
+* 単一クエリに関して: 複雑すぎるクエリは避け、シンプルで効果的なクエリを作成
+* 複数クエリ出力によって、検索範囲をカバーすることを意識した単一クエリを作成
+* 単一クエリ例1: "量子コンピュータ 最適化"
+* 単一クエリ例2: "deep learning image recognition algorithm"
+* 単一クエリ例3: "GraphRAG technique"
 </Tavily>
 """,
     "arxiv": """
@@ -501,12 +504,14 @@ def generate_queries(state: SectionState, config: RunnableConfig):
 
         system_instructions = query_writer_instructions.format(
             topic=topic,
+            section_name=section.name,
             section_topic=section.description,
             search_provider=provider,
             number_of_queries=number_of_queries,
             query_generation_description=query_generation_description,
         )
         system_instructions += f"\n\nPlease respond in **{configurable.language}** language."
+        print(system_instructions)
 
         # Generate queries for this provider
         queries = structured_llm.invoke(
@@ -637,12 +642,13 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         await asyncio.sleep(request_delay)
 
     # Format system instructions
-    section_writer_inputs_formatted = section_writer_inputs.format(
+    section_writer_instruction_query = section_writer_instructions.format(
         topic=topic,
         section_name=section.name,
         section_topic=section.description,
         context=source_str,
         section_content=section.content,
+        max_words=configurable.max_section_words,
     )
 
     # Generate section
@@ -652,8 +658,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     writer_model = init_chat_model(model=writer_model_name, model_provider=writer_provider, **writer_model_config)
     section_content = writer_model.invoke(
         [
-            SystemMessage(content=section_writer_instructions.format(max_words=configurable.max_section_words)),
-            HumanMessage(content=section_writer_inputs_formatted),
+            SystemMessage(content=section_writer_instruction_query),
+            HumanMessage(content="検索結果に基づいてセクションを作成してください。"),
         ]
     )
 
