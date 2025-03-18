@@ -59,7 +59,8 @@ def deduplicate_and_format_sources(
         formatted_text += f"{'=' * 80}\n"  # Clear section separator
         formatted_text += f"Source: {source['title']}\n"
         formatted_text += f"{'-' * 80}\n"  # Subsection separator
-        formatted_text += f"URL: {source['url']}\n===\n"
+        formatted_text += f"URL: {source['url']}\n"
+        formatted_text += f"{'-' * 80}\n"
 
         content = source.get("raw_content", None) or source.get("content", "")
         if content:
@@ -69,13 +70,14 @@ def deduplicate_and_format_sources(
             content = content.replace("\n\n", "\n").strip()
             formatted_text += f"Most relevant content from source ({max_tokens_per_source} limit): {content}\n"
 
+        formatted_text += f"{'=' * 80}\n\n"  # End section separator
+
     # add images if available
     if len(imgs_list) > 0:
         formatted_text += f"{'-' * 20}Images{'-' * 20}\n"
         for image in imgs_list:
             url, description = image["url"], image["description"]
             formatted_text += f"- <img src='{url}' alt='{description}'>\n"
-    formatted_text += f"{'=' * 80}\n\n"  # End section separator
 
     return formatted_text.strip()
 
