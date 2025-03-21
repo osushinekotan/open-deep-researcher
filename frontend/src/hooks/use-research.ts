@@ -43,9 +43,10 @@ export const useResearchPlan = (researchId: string) => {
   return useQuery({
     queryKey: ['research', researchId, 'plan'],
     queryFn: () => researchService.getResearchPlan(researchId),
-    // プランがフィードバック待ちでない場合はキャッシュを使用
-    staleTime: Infinity,
-    retry: false,
+    // ポーリング間隔を設定（フィードバック処理中も継続）
+    // ステータスに関係なく定期的に確認する
+    refetchInterval: 5000, 
+    retry: 3, // リトライを増やす
     // プランがない場合はエラーを表示しない
     onError: () => {},
   });
