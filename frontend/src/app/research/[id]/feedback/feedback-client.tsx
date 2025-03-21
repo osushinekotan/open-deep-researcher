@@ -79,18 +79,22 @@ export function FeedbackClient({ researchId }: { researchId: string }) {
     // フィードバック提出後の処理フロー
     if (waitingForUpdatedPlan) {
       // 新しいプランが検出された、かつフィードバック待ち状態の場合
-      if (newPlanDetected && research.status === 'waiting_for_feedback') {
-        console.log("更新されたプランが準備できました。フィードバック画面を再表示します。");
+      if (newPlanDetected) {
+        console.log("更新されたプランが検出されました。フィードバック画面を更新します。");
         setWaitingForUpdatedPlan(false);
         originalPlanRef.current = null;
         setNewPlanDetected(false);
       }
-      // 完了、エラーなど最終状態に達した場合はステータス画面にリダイレクト
+      // 特定の状態になったらリダイレクト
       else if (['completed', 'error'].includes(research.status)) {
         console.log("リサーチが完了かエラー状態になりました。ステータス画面に戻ります。");
         router.push(`/research/${researchId}`);
       }
-      // それ以外の状態では処理を継続
+      // 処理中は継続して待機
+      else if (research.status === 'processing_feedback') {
+        console.log("フィードバックを処理中です。待機を継続します。");
+        // 処理中は引き続き待機
+      }
     } 
     // 初期表示時のチェック（フィードバック待ち状態以外ならリダイレクト）
     else if (!waitingForUpdatedPlan && research.status !== 'waiting_for_feedback') {
@@ -102,11 +106,16 @@ export function FeedbackClient({ researchId }: { researchId: string }) {
   useEffect(() => {
     if (!waitingForUpdatedPlan) return;
     
+    // 最初のポーリングをすぐに実行
+    console.log("初回ポーリングを実行...");
+    refetchStatus();
+    refetchPlan();
+    
     const intervalId = setInterval(() => {
       console.log("ステータスとプランをポーリング中...");
       refetchStatus();
       refetchPlan();
-    }, 5000);
+    }, 3000); // 3秒間隔に短縮
     
     return () => clearInterval(intervalId);
   }, [waitingForUpdatedPlan, refetchStatus, refetchPlan]);
